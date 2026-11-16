@@ -211,7 +211,7 @@ function openPhoto(h) {
 // ảnh bóc mái động (WebP động lặp vô hạn, nền trong suốt): ảnh tĩnh hiện ngay, bản động tải song song rồi thay vào khi đã
 // giải mã xong → không nháy trống. Cỡ theo khung hiển thị × mật độ điểm ảnh; mạng chậm / tiết kiệm dữ liệu lấy cỡ nhỏ nhất
 // (720px, ~0,3 MB — còn nhẹ hơn ảnh tĩnh). Máy bật "giảm chuyển động" thì giữ ảnh tĩnh. Phóng to / kéo vẫn dùng chung transform.
-const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const RM = false; // không chặn theo "giảm chuyển động" (máy tiết kiệm pin / hiệu năng hay bật sẵn) — ảnh bóc mái luôn chạy
 function roofAnim(h) {
   if (RM) return;
   const c = navigator.connection || {}, slow = c.saveData || /(^|-)2g|3g/.test(c.effectiveType || '');

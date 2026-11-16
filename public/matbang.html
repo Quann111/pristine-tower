@@ -477,13 +477,13 @@ function loadEndHQ() {
 }
 // ---------- vòng lặp sau khi tách tầng xong (video PhanTangTI_2nd): l_00 trùng khung cuối f_49, l_49 ≈ l_00 →
 // lặp l_01..l_48 rồi quay về l_00 liền mạch. Chỉ tải SAU khi hotspot đã hiện, lúc trình duyệt rảnh, tuần tự 2–3 khung một lúc;
-// tải đủ cả vòng mới bắt đầu lặp (không giật). Bỏ qua khi mạng chậm / tiết kiệm dữ liệu / giảm chuyển động / admin xem trước:
+// tải đủ cả vòng mới bắt đầu lặp (không giật). Mạng chậm / tiết kiệm dữ liệu vẫn lặp, dùng cỡ nhỏ nhất (960, ~1,9 MB cả vòng); chỉ bỏ qua trong admin xem trước:
 // khi đó đứng yên ở khung cuối như cũ. Tối đa 1920px để 50 khung giải mã không chiếm quá nhiều RAM/GPU. ----------
-const LN = 50, LFPS = 25, LW = Math.min(W, 1920);
+const LN = 50, LFPS = 25, LW = window.SPLIT_SLOW ? 960 : Math.min(W, 1920);
 const lurl = (i) => `/split/loop/${LW}/l_${String(i).padStart(2, '0')}.webp?v=1`;
 const lframes = new Array(LN).fill(null);
 let lIdx = -1, lStarted = false, lRaf = 0, lHold = false;
-const LOOP_OK = !preview && !window.SPLIT_SLOW && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+const LOOP_OK = !preview; // không chặn theo chế độ tiết kiệm / giảm chuyển động: Windows, máy tiết kiệm pin hay bật sẵn khiến vòng lặp không bao giờ chạy
 function loadLoop() {
   if (lStarted || !LOOP_OK) return; lStarted = true;
   let nx = 0, act = 0, got = 0; const par = Math.min(innerWidth, innerHeight) < 600 ? 2 : 3;
