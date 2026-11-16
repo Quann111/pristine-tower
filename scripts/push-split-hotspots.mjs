@@ -2,7 +2,11 @@
 // Dùng (PowerShell): $env:ADMIN_PASS="..."; node scripts/push-split-hotspots.mjs [https://pristine-tower.quann111.workers.dev]
 import fs from 'node:fs';
 const base = (process.argv[2] || 'https://pristine-tower.quann111.workers.dev').replace(/\/$/, '');
-const pass = process.env.ADMIN_PASS;
+// không đặt ADMIN_PASS (hoặc còn để chữ mẫu trong dấu <>) → lấy từ .dev.vars
+let pass = process.env.ADMIN_PASS;
+if (!pass || /^<.*>$/.test(pass)) {
+  try { pass = (fs.readFileSync(new URL('../.dev.vars', import.meta.url), 'utf8').match(/^ADMIN_PASS\s*=\s*"?([^"\r\n]*)"?/m) || [])[1]; } catch {}
+}
 if (!pass) { console.error('Thiếu biến môi trường ADMIN_PASS'); process.exit(1); }
 const local = JSON.parse(fs.readFileSync(new URL('../data/tour.json', import.meta.url), 'utf8')).split.hotspots;
 const login = await fetch(`${base}/api/login`, { method: 'POST', body: JSON.stringify({ user: process.env.ADMIN_USER || 'admin', pass }) });
