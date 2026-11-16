@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Phân tầng - Pristine Tower</title>
+<link rel="preload" href="/api/tour" as="fetch" crossorigin="anonymous">
+<script>
+// tải ảnh mặt đứng song song với /api/tour (khớp cách chọn cỡ bên dưới)
+document.write(`<link rel="preload" as="image" fetchpriority="high" href="/split/matdung/matdung-${Math.max(innerWidth, innerHeight) * Math.min(devicePixelRatio || 1, 2) <= 2000 ? 1920 : 3200}.webp">`);
+</script>
+<link rel="preload" href="/fonts/DFVN-Gatsby-Gilmour.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="/menu.js">
+<style>
+*{box-sizing:border-box}
+@view-transition{navigation:auto}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#stage{position:fixed;inset:0;height:100dvh;background:#000;overflow:hidden}
+/* nền mờ cho phần màn hình ngoài ảnh (màn dọc) */
+#blur{display:none;position:absolute;inset:-40px;background:center/cover no-repeat;filter:blur(24px) brightness(.7)}
+/* khung ảnh: mọi toạ độ hotspot/khối tầng là 0..1 theo khung này */
+#art{position:absolute;left:0;top:0;transform-origin:0 0;opacity:0;transition:opacity .5s}
+#art.on{opacity:1}
+#art.fade{-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
+#art>img{position:absolute;inset:0;width:100%;height:100%;display:block}
+#ov{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+/* khối tầng ẩn hẳn khi chưa rê; rê vào nhãn/khối thì hiện khối tầng tương ứng theo Figma "Vector 11":
+   nền gradient nâu trong suốt (độ trong nằm ở #gr), viền 2px #EFEEEA, bóng 0 0 6px đen 75%; vẫn bắt chuột vì fill khác none */
+#ov path{fill:url(#gr);fill-opacity:0;stroke:#EFEEEA;stroke-opacity:0;stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer;transition:fill-opacity .3s,stroke-opacity .3s}
+#ov path.on{fill-opacity:1;stroke-opacity:1}
+/* bóng đặt trên cả lớp SVG (trên path thì đơn vị bóng theo viewBox 0..1, phóng to sai); #art bị scale(s) nên chia lại cho s */
+#ov{transition:filter .3s}
+#ov:has(path.on){filter:drop-shadow(0 0 calc(6px / var(--s, 1)) rgba(0,0,0,.75))}
+/* --k: phóng nhãn trên màn nhỏ, giữ chấm chỉ đứng yên (nhãn trái neo mép phải, nhãn phải neo mép trái) */
+.lb{position:absolute;transform:translateY(-50%) scale(var(--k,1));cursor:pointer;transition:filter .25s,transform .25s}
+.lb.l{transform-origin:100% 50%}.lb.r{transform-origin:0 50%}
+.lb img{display:block;width:100%;height:auto;pointer-events:none}
+.lb.on{filter:brightness(1.12)}
+.lb.l.on{transform:translateY(-50%) translateX(-3px) scale(var(--k))}
+.lb.r.on{transform:translateY(-50%) translateX(3px) scale(var(--k))}
+@media(hover:none){.lb.on{filter:none}}
+#ttl{position:absolute;left:50%;top:max(28px,4.5vh);transform:translateX(-50%);margin:0;font:400 clamp(20px,2.2vw,34px)/1 "DFVN Gatsby Gilmour",Georgia,serif;text-transform:uppercase;color:#EFEEEA;text-shadow:2px 2px 4px rgba(0,0,0,.35);white-space:nowrap;z-index:5;pointer-events:none}
+#logo{position:fixed;left:22px;top:18px;width:128px;height:auto;z-index:13;pointer-events:none;filter:drop-shadow(0 0 4px rgba(0,0,0,.4))}
+@media(max-width:700px){#logo{top:14px;left:16px;width:96px}#ttl{top:58px}}</style>
+</head>
+<body>
+<div id="stage">
+  <div id="blur"></div>
+  <div id="art"><img id="bgimg" alt="Mặt đứng toà nhà" decoding="async" draggable="false">
+    <svg id="ov" viewBox="0 0 1 1" preserveAspectRatio="none"><defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset=".0344" stop-color="#493729" stop-opacity=".75"/><stop offset=".9706" stop-color="#AF8462" stop-opacity=".5"/></linearGradient></defs></svg>
+  </div>
+  <h1 id="ttl"></h1>
+  <img id="logo" src="/brand/logo.webp" alt="Logo" width="128" height="29" draggable="false">
+  <div id="ui"></div>
+</div>
+<script type="module">
+import { initMenu } from '/menu.js';
+const $ = (id) => document.getElementById(id);
+const IW = 2000, IH = 1125; // tỉ lệ ảnh mặt đứng
+initMenu($('ui'), 'fly', { tab: 'matbang', noToggle: true });
+
+const tour = await fetch('/api/tour').then((r) => r.json()).catch(() => ({}));
+const elev = tour.elev || { items: [] };
+$('ttl').textContent = (tour.floors && tour.floors.title) || 'Phân tầng chức năng';
+const art = $('art'), ov = $('ov'), img = $('bgimg');
+// màn nhỏ dùng ảnh 1920, còn lại ảnh lớn
+const big = elev.bg || '/split/matdung/matdung-3200.webp';
+const src = Math.max(innerWidth, innerHeight) * Math.min(devicePixelRatio || 1, 2) <= 2000 ? big.replace(/matdung-3200/, 'matdung-1920') : big;
+img.src = src;
+img.decode().catch(() => {}).then(() => art.classList.add('on'));
+
+// tầng tiện ích: chạy video chuyển cảnh (khung t_*) rồi nối luôn khung tách tầng ở /matbang?from=pt
+// cỡ khung chọn như đoạn đầu trang matbang (ảnh chuyển cảnh tối đa 1920)
+const transW = (() => {
+  const c = navigator.connection || {}, slow = c.saveData || /(^|-)2g|3g/.test(c.effectiveType || '');
+  const need = Math.max(innerWidth, innerHeight) * Math.min(devicePixelRatio || 1, 2);
+  let i = need <= 1050 ? 0 : need <= 1450 ? 1 : 2;
+  if (Math.min(innerWidth, innerHeight) < 600) i = Math.min(i, 1);
+  if (slow) i = Math.max(0, i - 1);
+  return [960, 1280, 1920][i];
+})();
+let warmed = false;
+const warm = () => { // rê / chạm vào tầng tiện ích: tải trước cả video chuyển cảnh (10 khung đầu ưu tiên)
+  if (warmed) return; warmed = true;
+  for (let i = 0; i < 48; i++) { const im = new Image(); im.fetchPriority = i < 10 ? "high" : "low"; im.src = `/split/trans/${transW}/t_${String(i).padStart(2, '0')}.webp?v=1`; }
+};
+const go = (h) => {
+  if (h.target === 'amenity') {
+    // lưu vị trí ảnh đang thấy để khung đầu video khớp đúng chỗ
+    try { sessionStorage.setItem('ptTrans', JSON.stringify({ ...artT, w: innerWidth, h: innerHeight, t: Date.now() })); } catch {}
+    location.href = '/matbang?from=pt';
+  } else location.href = `/floor?id=${encodeURIComponent(h.floorId || h.id)}&view=2d&from=pt`;
+};
+let artT = null;
+const NS = 'http://www.w3.org/2000/svg';
+for (const h of elev.items) {
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', h.poly.length ? 'M' + h.poly.map((q) => q.join(' ')).join('L') + 'Z' : '');
+  const d = document.createElement('div');
+  d.className = 'lb ' + h.side;
+  d.style.cssText = `left:${h.x * 100}%;top:${h.y * 100}%;width:${h.w * 100}%`;
+  d.innerHTML = `<img alt="" draggable="false" src="${h.img || ''}">`;
+  const on = (v) => { p.classList.toggle('on', v); d.classList.toggle('on', v); };
+  for (const el of [p, d]) {
+    el.addEventListener('pointerenter', () => { on(true); if (h.target === 'amenity') warm(); });
+    el.addEventListener('pointerleave', () => on(false));
+    if (h.target === 'amenity') el.addEventListener('pointerdown', warm, { passive: true });
+    el.addEventListener('click', () => { on(true); if (h.target === 'amenity') go(h); else setTimeout(() => go(h), 180); });
+  }
+  ov.append(p); art.append(d);
+}
+
+// khung ảnh: luôn phủ kín màn hình (cover), toà nhà đặt giữa ngang và giữa vùng tiêu đề ↔ thanh tab, kẹp để không hở mép.
+// Nhãn phóng/thu quanh chấm chỉ (--k): đủ lớn để đọc nhưng không bao giờ tràn khỏi màn
+const LBL = 0.129 * IW; // bề rộng nhãn mặc định (px ảnh)
+// chấm chỉ của nhãn (toạ độ 0..1 theo ảnh): nhãn trái ở mép phải, nhãn phải ở mép trái
+const dotsL = elev.items.filter((h) => h.side !== 'r').map((h) => h.x + h.w), dotsR = elev.items.filter((h) => h.side === 'r').map((h) => h.x);
+function layout() {
+  const w = innerWidth, h = innerHeight, short = Math.min(w, h);
+  const tabs = document.querySelector('#tabs'), bot = tabs ? h - tabs.getBoundingClientRect().top + 6 : 90;
+  // cột nhãn (Tầng 40 → Tầng 1-3) cao theo ảnh: span + 1 nhãn (px ảnh)
+  const span = (Math.max(...elev.items.map((it) => it.y)) - Math.min(...elev.items.map((it) => it.y))) * IH, colH = span + LBL * 0.232 * 1.2;
+  let s = Math.max(w / IW, h / IH);
+  // không đủ chỗ dưới tiêu đề (màn ngang thấp / siêu rộng) → ẩn tiêu đề
+  const ttl = $('ttl'); ttl.style.visibility = '';
+  if (colH * s > h - (ttl.getBoundingClientRect().bottom + 6) - bot) ttl.style.visibility = 'hidden';
+  const tr = ttl.getBoundingClientRect(), top = ttl.style.visibility ? 6 : tr.bottom + 6;
+  const availH = Math.max(120, h - top - bot);
+  // màn tỉ lệ rất dài (vd 2000×700): phủ kín thì cột nhãn cao hơn màn, Tầng 40 / Tầng 1-3 bị cắt → thu ảnh cho cột nhãn vừa,
+  // hai bên lấp bằng chính ảnh làm mờ, mép ảnh hoà dần vào nền mờ
+  // nhãn được phóng tới cỡ tối thiểu trên màn nhỏ → tính cả phần cao thêm đó
+  const LM = short < 360 ? 100 : short < 600 ? 116 : 150, ys0 = elev.items.map((it) => it.y * IH);
+  const fits = (sc) => {
+    const half = LBL * 0.232 * 0.6 * Math.max(sc, LM / LBL), y0 = Math.min(...ys0) * sc - half, y1 = Math.max(...ys0) * sc + half;
+    if (y1 - y0 > availH) return false;
+    if (IH * sc < h) return true; // ảnh thấp hơn màn: dịch dọc tự do
+    // ảnh cao hơn/bằng màn: chỉ dịch được trong [h - IH·s, 0] mà vẫn phải đặt cột nhãn trong [top, h - bot]
+    return Math.max(h - IH * sc, top - y0) <= Math.min(0, h - bot - y1);
+  };
+  if (!fits(s)) { let lo = 0.05, hi = s; for (let i = 0; i < 20; i++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; } s = lo; }
+  const narrow = IW * s < w - 1, flat = IH * s < h - 1;
+  $('blur').style.display = narrow || flat ? 'block' : 'none';
+  if (narrow || flat) $('blur').style.backgroundImage = `url("${img.currentSrc || img.src}")`;
+  art.classList.toggle('fade', narrow);
+  let left = w / 2 - 0.51 * IW * s; if (!narrow) left = Math.min(0, Math.max(w - IW * s, left));
+  const LMIN = LM; // màn rất thấp (iPhone SE ngang): nhãn nhỏ hơn chút để cột nhãn vừa
+  // chỗ trống từ chấm chỉ tới mép màn (phía chật hơn quyết định)
+  const room = Math.min(...dotsL.map((x) => left + x * IW * s), ...dotsR.map((x) => w - (left + x * IW * s))) - 6;
+  // nhãn cùng phía cách nhau ≥120px ảnh, nhãn cao 0.232×rộng: k > 1.85 sẽ chồng nhau
+  const k = Math.min(Math.max(1, LMIN / (LBL * s)), room / (LBL * s), 1.85);
+  // dọc: đặt cả cột nhãn (từ nhãn cao nhất tới thấp nhất) giữa tiêu đề và thanh tab; ảnh vẫn phủ kín
+  const half = LBL * 0.232 * k * s / 2, ys = elev.items.map((it) => it.y * IH * s);
+  const y0 = Math.min(...ys) - half, y1 = Math.max(...ys) + half;
+  // không vừa thì ưu tiên giữ nhãn dưới cùng (Tầng 1-3) trên thanh tab
+  let tp = (y1 - y0) > availH ? h - bot - y1 : top + (availH - (y1 - y0)) / 2 - y0;
+  if (!flat) tp = Math.min(0, Math.max(h - IH * s, tp));
+  art.style.width = IW + 'px'; art.style.height = IH + 'px';
+  art.style.transform = `translate(${left}px,${tp}px) scale(${s})`;
+  art.style.setProperty('--k', k); art.style.setProperty('--s', s);
+  artT = { left, tp, s };
+}
+// rảnh thì tải trước khung đầu video chuyển cảnh (nhẹ, ~50–100KB)
+(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { const im = new Image(); im.src = `/split/trans/${transW}/t_00.webp?v=1`; });
+addEventListener('resize', layout); layout();
+document.fonts.ready.then(layout); // tiêu đề đổi cao khi phông tải xong
+// menu.css nạp sau: đo lại vị trí thanh tab khi CSS đã xong
+addEventListener('load', layout);
+const mcss = document.querySelector('link[href="/menu.css"]'); if (mcss) mcss.addEventListener('load', layout);
+</script>
+</body>
+</html>

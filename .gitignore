@@ -1,0 +1,7 @@
+node_modules
+.wrangler
+wrangler-dev.log
+server.log
+.dev.vars
+data/uploads
+backup/

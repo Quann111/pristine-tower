@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pristine-tower",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/uploads/*", "/admin"]
+  },
+  "kv_namespaces": [
+    { "binding": "DB" }
+  ],
+  "durable_objects": { "bindings": [{ "name": "TOUR", "class_name": "TourDB" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TourDB"] }],
+  "vars": { "ADMIN_USER": "admin" }
+}

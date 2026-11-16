@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin - Pristine Tower</title>
+<link rel="stylesheet" href="/vendor/pannellum.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#0f1115;color:#e8e8ec;font-family:Inter,system-ui,sans-serif}
+.hidden{display:none!important}
+.topbar{display:flex;align-items:center;gap:16px;padding:12px 20px;background:#16181f;border-bottom:1px solid #262a33}
+@media(max-width:700px){.topbar{flex-wrap:wrap;gap:8px;padding:10px 12px}.topbar .sp{display:none}.topbar .btn{padding:6px 10px;font-size:13px;white-space:nowrap}.topbar #logout{margin-left:auto}main{padding:12px}.toolbar h1{font-size:17px}.panel{max-height:none}}
+.topbar b{font-weight:600}.topbar .sp{margin-left:auto;opacity:.7;font-size:14px}
+main{padding:20px;max-width:1600px;margin:0 auto}
+.btn{background:#262a33;color:#e8e8ec;border:1px solid #383d49;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:14px;text-decoration:none;display:inline-block}
+.btn:hover{background:#313644}.btn.primary{background:#4c7cf0;border-color:#4c7cf0;color:#fff;font-weight:600}.btn.danger{color:#ff8080}.btn:disabled{opacity:.5}
+input,select{background:#0f1115;border:1px solid #383d49;border-radius:6px;padding:8px 10px;color:#e8e8ec;font-size:14px;width:100%}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{width:340px;display:flex;flex-direction:column;gap:12px;background:#16181f;border:1px solid #262a33;border-radius:12px;padding:28px}
+.card h1{font-size:18px;margin:0}label{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.err{color:#ff8080;font-size:13px;margin:0}
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}.toolbar h1{font-size:20px;margin:0 auto 0 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.scene{background:#16181f;border:1px solid #262a33;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.thumb{position:relative;aspect-ratio:2/1;background:#0a0b0d}.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.badge{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.7);border-radius:999px;padding:2px 8px;font-size:11px}.badge.first{background:#4c7cf0}
+.body{padding:10px 12px;display:flex;flex-direction:column;gap:8px}.row{display:flex;gap:6px}.row .btn{flex:1;font-size:12px;padding:6px 8px;text-align:center}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal>div{background:#16181f;border:1px solid #262a33;border-radius:12px;padding:24px;width:380px;display:flex;flex-direction:column;gap:12px}
+.modal h2{margin:0;font-size:16px}.actions{display:flex;justify-content:flex-end;gap:8px}
+.editor{display:grid;grid-template-columns:1fr 340px;gap:16px}
+@media(max-width:900px){.editor{grid-template-columns:1fr}}
+#pv.phone{width:390px;max-width:100%;margin:0 auto}
+#pv{height:70vh;min-height:360px;border-radius:10px;overflow:hidden;background:#000}
+.panel{background:#16181f;border:1px solid #262a33;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;max-height:70vh;overflow:auto}
+.hs-item{border:1px solid #262a33;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.hint{font-size:13px;opacity:.7;margin:0}
+.ahs{width:26px;height:26px;border-radius:50%;background:rgba(76,124,240,.5);border:2px solid #fff;cursor:pointer}
+.ahs.mv{background:rgba(255,160,0,.9);box-shadow:0 0 0 6px rgba(255,160,0,.35)}
+.ahs.new{background:rgba(255,160,0,.7)}
+#hstage{position:relative;aspect-ratio:16/9;background:#000 center/cover;border-radius:10px;overflow:hidden;cursor:crosshair}
+.hm{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:rgba(76,124,240,.6);border:2px solid #fff;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.hm.mv{background:rgba(255,160,0,.9);box-shadow:0 0 0 6px rgba(255,160,0,.35);animation:blink 1s infinite}
+@keyframes blink{50%{box-shadow:0 0 0 12px rgba(255,160,0,0)}}
+.btn.on{background:#ff9f1a;border-color:#ff9f1a;color:#000}
+.sizebox{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;background:#16181f;border:1px solid #262a33;border-radius:10px;padding:12px;margin-bottom:14px}.sizebox label{width:110px}.sizebox b{width:100%;font-size:13px}
+/* xem trước trang Mặt bằng theo thiết bị */
+#spv{background:#0b0c10;border:1px solid #262a33;border-radius:10px;padding:12px}
+#spwrap{position:relative;margin:12px auto 0;overflow:hidden}
+#spdev{position:absolute;left:0;top:0;transform-origin:0 0;border:10px solid #2a2d36;border-radius:26px;background:#000;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+#spdev.desktop{border-radius:8px;border-width:8px}
+#spdev iframe{display:block;border:0;border-radius:16px;background:#000}
+#spdev.desktop iframe{border-radius:2px}
+#spctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-top:12px}
+#spctl label{font-size:12px}#spctl input{width:100%}
+#apstage{position:relative;margin-top:10px;background:#2b1f17;border-radius:10px;overflow:hidden;touch-action:none;user-select:none;cursor:crosshair}
+#apstage img{display:block;width:100%;pointer-events:none}
+#apstage .ar{position:absolute;border:2px solid rgba(255,248,236,.9);background:rgba(228,196,156,.25);cursor:move;font:600 11px sans-serif;color:#fff;display:flex;align-items:center;justify-content:center;text-shadow:0 1px 2px #000}
+#apstage .ar.sel{border-color:#ff9f1a;background:rgba(255,159,26,.3)}
+#apstage .ar i{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;background:#ff9f1a;border:2px solid #fff;border-radius:50%;cursor:nwse-resize}
+#aplist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:10px}
+#hslist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:10px}
+#hslist .hs-item{display:flex;flex-direction:column;gap:6px}
+#hslist .hs-item img{width:100%;aspect-ratio:360/190;object-fit:cover;border-radius:6px;background:#000}
+#estage{position:relative;border-radius:10px;overflow:hidden;background:#111;touch-action:none;user-select:none;aspect-ratio:2000/1125}
+#eimg{display:block;width:100%;height:100%;pointer-events:none}
+#esvg{position:absolute;inset:0;width:100%;height:100%}
+#esvg path{fill:rgba(214,192,174,.25);stroke:#fff;stroke-width:1.5;vector-effect:non-scaling-stroke;cursor:pointer}
+#esvg path.sel{fill:rgba(255,159,26,.35);stroke:#ff9f1a}
+#elbs{position:absolute;inset:0;pointer-events:none}
+#elbs img{position:absolute;transform:translateY(-50%);pointer-events:auto;cursor:move}
+#elbs img.sel{outline:2px solid #ff9f1a}
+#elbs .ev{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#ff9f1a;border:2px solid #fff;pointer-events:auto;cursor:move}
+#fpv{height:200px;border-radius:8px;overflow:hidden;background:#000}
+#fpv.phone{width:130px;height:280px;margin:0 auto}
+#ustage{position:relative;border-radius:10px;overflow:hidden;background:#111;touch-action:none;user-select:none;cursor:crosshair}
+#uimg{display:block;width:100%;pointer-events:none;background:#1b120d}
+#uover{position:absolute;inset:0}
+.uu{position:absolute;box-sizing:border-box;border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font:600 14px Georgia,serif;text-shadow:0 1px 3px #000;cursor:move}
+.uu.sel{outline:3px solid #ff9f1a}
+.uu .rz{position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;background:#ff9f1a;border:2px solid #fff;cursor:nwse-resize}
+.tchip{border-radius:14px;padding:6px 10px;border:2px solid transparent;cursor:pointer;color:#24251F;font-size:12px}
+.tchip.on{border-color:#fff;box-shadow:0 0 0 2px #4c7cf0}
+.crop{position:absolute;top:0;bottom:0;box-shadow:0 0 0 9999px rgba(0,0,0,.6);border:2px solid #ff9f1a;pointer-events:none}
+.hm.new{background:rgba(255,160,0,.8)}
+.toast{position:fixed;bottom:20px;right:20px;background:#4c7cf0;padding:10px 16px;border-radius:8px;z-index:99}
+</style>
+</head>
+<body>
+<div id="login" class="login hidden"><form class="card" id="lf"><h1>Admin Pristine Tower</h1><p class="hint">Đăng nhập để quản lý ảnh &amp; hotspot</p>
+<label>Tài khoản<input id="lu" autocomplete="username" value="admin"></label><label>Mật khẩu<input id="lp" type="password" autocomplete="current-password"></label>
+<p class="err" id="le"></p><button class="btn primary" type="submit">Đăng nhập</button></form></div>
+
+<div id="app" class="hidden">
+  <div class="topbar"><b>Admin Pristine Tower</b><a class="btn" href="#/">Cảnh 360</a><a class="btn" href="#/home">Trang chủ</a><a class="btn" href="#/floors">Mặt bằng</a><a class="btn" href="#/elev">Phân tầng</a><a class="btn" href="#/units">Căn hộ</a><a class="btn" href="/" target="_blank">Xem site</a><span class="sp">admin</span><button class="btn" id="logout" type="button">Đăng xuất</button></div>
+  <main>
+    <section id="v-list">
+      <div class="toolbar"><h1>Danh sách cảnh 360</h1><button class="btn primary" id="add" type="button">+ Tải ảnh 360 mới</button></div>
+      <div class="sizebox"><b>Kích thước hotspot (px) theo nền tảng — áp dụng cho trang chủ và ảnh 360</b><label>💻 Laptop (≥1200)<input class="hsz" data-k="desktop" type="number" min="16" max="120"></label><label>📲 Tablet (768–1199)<input class="hsz" data-k="tablet" type="number" min="16" max="120"></label><label>📱 Điện thoại (&lt;768)<input class="hsz" data-k="phone" type="number" min="16" max="120"></label><button class="btn primary savesz" type="button">Lưu kích thước</button></div>
+      <div class="grid" id="grid"></div>
+    </section>
+    <section id="v-home" class="hidden">
+      <div class="toolbar"><h1>Trang chủ (Flycam) - hotspot</h1><label class="btn" style="margin:0">Đổi ảnh nền<input id="hbg" type="file" accept="image/*" hidden></label></div>
+      <div class="sizebox"><b>Kích thước hotspot (px) theo nền tảng — áp dụng cho trang chủ và ảnh 360</b><label>💻 Laptop (≥1200)<input class="hsz" data-k="desktop" type="number" min="16" max="120"></label><label>📲 Tablet (768–1199)<input class="hsz" data-k="tablet" type="number" min="16" max="120"></label><label>📱 Điện thoại (&lt;768)<input class="hsz" data-k="phone" type="number" min="16" max="120"></label><button class="btn primary savesz" type="button">Lưu kích thước</button></div>
+      <div class="editor"><div id="hstage"></div>
+        <div class="panel"><div class="row"><button class="btn" id="hfp" type="button">📱 Điện thoại</button><button class="btn" id="hft" type="button">📲 Tablet</button></div>
+          <p class="hint" id="hfhint" hidden>Kéo ngang trên ảnh: khung sáng là phần thiết bị đang chọn sẽ thấy khi mở trang. Thả chuột để lưu.</p>
+          <button class="btn primary" id="haddhs" type="button">+ Thêm hotspot</button>
+          <p class="hint">Bấm "Thêm hotspot", rồi bấm vào ảnh để chọn vị trí. Số trên điểm xanh = thứ tự hotspot.</p>
+          <div id="hnew" class="hs-item hidden"><label>Cảnh đích<select id="hnt"></select></label><label>Nhãn<input id="hnx" maxlength="80"></label>
+            <div class="row"><button class="btn primary" id="hnsave" type="button">Thêm hotspot</button><button class="btn" id="hncancel" type="button">Huỷ</button></div></div>
+          <div id="hhlist"></div></div></div>
+    </section>
+    <section id="v-floors" class="hidden">
+      <div class="toolbar"><h1>Mặt bằng — video tách tầng &amp; các tầng</h1><button class="btn primary" id="fsave" type="button">Lưu danh sách tầng</button></div>
+      <div class="editor"><div id="spv">
+          <div class="row" id="spbtn"><button class="btn on" data-d="phone" type="button">📱 Điện thoại</button><button class="btn" data-d="phoneLand" type="button">📱 Điện thoại ngang</button><button class="btn" data-d="tablet" type="button">▭ Tablet</button><button class="btn" data-d="desktop" type="button">💻 Máy tính</button></div>
+          <div class="row" style="margin-top:8px"><button class="btn" id="spplay" type="button">▶ Chạy thử</button><button class="btn" id="spreset" type="button">⏮ Về khung đầu</button><span class="hint" id="spsize" style="margin:auto 0"></span></div>
+          <div id="spwrap"><div id="spdev"><iframe id="spframe" title="Xem trước Mặt bằng"></iframe></div></div>
+          <div id="spctl">
+            <label>Tâm ngang <span id="vcx"></span><input type="range" id="scx" min="0" max="1" step="0.005"></label>
+            <label>Tâm dọc <span id="vcy"></span><input type="range" id="scy" min="0" max="1" step="0.005"></label>
+            <label>Độ phóng <span id="vzoom"></span><input type="range" id="szoom" min="0.5" max="3" step="0.01"></label>
+            <label>Nhãn cách đáy <span id="vlabel"></span><input type="range" id="slabel" min="0" max="0.5" step="0.005"></label>
+          </div>
+          <div class="row" style="margin-top:10px"><button class="btn primary" id="spsave" type="button">Lưu khung hình</button><button class="btn" id="spdef" type="button">Mặc định thiết bị này</button></div>
+          <p class="hint">Mỗi thiết bị lưu riêng: kéo thanh trượt để căn toà nhà, khung xem trước cập nhật ngay.</p>
+          <hr style="border:0;border-top:1px solid #262a33;margin:14px 0">
+          <b>Hotspot sau khung cuối (thẻ tiện ích, nhãn tầng, đường spine)</b>
+          <div class="row" style="margin-top:8px"><button class="btn" id="spedit" type="button">✏️ Sửa vị trí hotspot</button><button class="btn" id="spend" type="button">⏭ Xem hiệu ứng khung cuối</button><button class="btn" id="hsadd" type="button">+ Thêm thẻ tiện ích</button><button class="btn" id="hsaddf" type="button">+ Thêm nhãn tầng</button><button class="btn primary" id="hssave" type="button">Lưu hotspot</button></div>
+          <p class="hint">Chế độ sửa: kéo thẻ để dời; kéo chấm cam (điểm chỉ trên mô hình) và chấm xanh (điểm gấp của đường spine). Nháy đúp lên đường để thêm điểm gấp, nháy đúp chấm xanh để xoá. Nên sửa ở chế độ Máy tính để thấy đúng vị trí gốc.</p>
+          <div id="hslist"></div>
+          <hr style="border:0;border-top:1px solid #262a33;margin:14px 0">
+          <b>Sơ đồ tầng tiện ích (trang /tienich)</b>
+          <div class="row" style="margin-top:8px"><label class="btn" style="margin:0">🗺 Đổi ảnh sơ đồ<input id="apimg" type="file" accept="image/*" hidden></label><button class="btn" id="apadd" type="button">+ Thêm tiện ích</button><button class="btn primary" id="apsave" type="button">Lưu sơ đồ tiện ích</button><a class="btn" href="/tienich" target="_blank">Xem trang</a></div>
+          <p class="hint">Chọn một tiện ích rồi kéo trên sơ đồ để vẽ vùng; kéo vùng để dời, kéo chấm cam để co giãn.</p>
+          <div id="apstage"><img id="applan" alt="Sơ đồ tầng tiện ích" draggable="false"><div id="apzones" style="position:absolute;inset:0"></div></div>
+          <div id="aplist"></div>
+        </div>
+        <div class="panel"><button class="btn primary" id="fadd" type="button">+ Thêm mục tầng</button>
+          <div id="ftools" class="hs-item hidden"><b id="fsel"></b>
+            <div class="row"><label class="btn" style="margin:0;text-align:center">🌐 Ảnh 360 của tầng<input id="fpano" type="file" accept="image/*" hidden></label><label class="btn" style="margin:0;text-align:center">🗺 Ảnh 2D của tầng<input id="fplan" type="file" accept="image/*" hidden></label></div>
+            <p class="hint" id="fimg"></p></div>
+          <div id="fcam" class="hs-item hidden"><b>Góc camera 360 khi mới vào trang tầng</b>
+            <div class="row"><button class="btn on" id="fcd" type="button">💻 Laptop</button><button class="btn" id="fcm" type="button">📱 Điện thoại</button></div>
+            <div id="fpv"></div><p class="hint" id="fvinfo"></p>
+            <div class="row"><button class="btn primary" id="fsetv" type="button">Đặt hướng hiện tại</button><button class="btn" id="fgov" type="button">Xem hướng đã đặt</button><button class="btn danger" id="fclrv" type="button">Xoá</button></div></div>
+          <div id="flist"></div></div></div>
+    </section>
+    <section id="v-elev" class="hidden">
+      <div class="toolbar"><h1>Phân tầng — ảnh mặt đứng, nhãn tầng &amp; khối tầng</h1><label class="btn" style="margin:0">🖼 Đổi ảnh nền<input id="ebg" type="file" accept="image/*" hidden></label><a class="btn" href="/phantang" target="_blank">Xem trang</a><button class="btn primary" id="esave" type="button">Lưu phân tầng</button></div>
+      <div class="editor"><div id="estage"><img id="eimg" alt="Mặt đứng" draggable="false"><svg id="esvg" viewBox="0 0 1 1" preserveAspectRatio="none"></svg><div id="elbs"></div></div>
+        <div class="panel"><button class="btn primary" id="eadd" type="button">+ Thêm nhãn tầng</button>
+          <p class="hint">Bấm một nhãn/khối để chọn. Kéo nhãn để dời. Kéo chấm cam để sửa khối tầng; nháy đúp lên ảnh để thêm đỉnh vào khối đang chọn, nháy đúp chấm cam để xoá đỉnh.</p>
+          <div id="elist"></div></div></div>
+    </section>
+    <section id="v-units" class="hidden">
+      <div class="toolbar"><h1>Căn hộ — vùng hiển thị trên mặt bằng 2D</h1><label style="flex-direction:row;align-items:center;gap:8px;margin:0">Tầng <select id="usel" style="width:auto"></select></label><button class="btn primary" id="usave" type="button">Lưu vùng căn hộ</button></div>
+      <div class="editor"><div id="ustage"><img id="uimg" alt="Mặt bằng" draggable="false"><div id="uover"></div></div>
+        <div class="panel">
+          <b>Loại căn hộ đang vẽ</b>
+          <div id="utypes" class="row" style="flex-wrap:wrap"></div>
+          <label>Số căn hộ (nhãn)<input id="ulabel" maxlength="8" value="01"></label>
+          <p class="hint">Kéo chuột trên ảnh để vẽ một vùng mới. Kéo vùng để di chuyển, kéo ô vuông ở góc dưới phải để đổi kích thước. Khi khách bấm một loại căn hộ ở trang 2D, các vùng của loại đó sẽ sáng lên.</p>
+          <div id="ulist"></div>
+          <div class="hs-item"><b>Tên và màu từng loại</b><div id="utedit"></div><button class="btn" id="utsave" type="button">Lưu tên/màu loại căn hộ</button></div>
+        </div></div>
+    </section>
+    <section id="v-edit" class="hidden">
+      <div class="toolbar"><a class="btn" href="#/">← Danh sách</a><h1 id="et"></h1></div>
+      <div class="editor"><div id="pv"></div>
+        <div class="panel"><div class="hs-item"><b>Hướng camera khi mới vào cảnh</b>
+            <div class="row"><button class="btn on" id="devd" type="button">💻 Laptop</button><button class="btn" id="devm" type="button">📱 Điện thoại</button></div><span class="hint" id="viewinfo"></span>
+            <div class="row"><button class="btn primary" id="setview" type="button">Đặt hướng hiện tại</button><button class="btn" id="gotoview" type="button">Xem hướng đã đặt</button><button class="btn danger" id="clrview" type="button">Xoá</button></div></div>
+          <button class="btn primary" id="addhs" type="button">+ Thêm hotspot</button>
+          <p class="hint" id="addhint">Bấm "Thêm hotspot", sau đó bấm vào ảnh để chọn vị trí.</p>
+          <div id="newbox" class="hs-item hidden"><label>Cảnh đích<select id="nt"></select></label><label>Nhãn<input id="nx" maxlength="80"></label>
+            <div class="row"><button class="btn primary" id="nsave" type="button">Thêm hotspot</button><button class="btn" id="ncancel" type="button">Huỷ</button></div></div>
+          <div id="hlist"></div></div></div>
+    </section>
+  </main>
+</div>
+<div id="up" class="modal hidden"><div><h2>Tải ảnh 360 mới</h2><label>Tên cảnh<input id="un" value="GÓC NHÌN MỚI"></label><label>Ảnh panorama (tỉ lệ 2:1)<input id="uf" type="file" accept="image/*"></label><p class="err" id="ue"></p>
+<div class="actions"><button class="btn" id="ucancel" type="button">Huỷ</button><button class="btn primary" id="uok" type="button">Tải lên</button></div></div></div>
+<script src="/vendor/pannellum.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let uf = null, ul = [], usel = null, utype = null, udrag = null, udraw = null;
+const uTypes = () => tour.floors.unitTypes || [];
+const uColor = (id) => (uTypes().find((t) => t.id === id) || { color: '#888' }).color;
+function editUnits() {
+  const items = tour.floors.items; if (!uf || !items.some((x) => x.id === uf)) uf = items[0] && items[0].id;
+  $('usel').innerHTML = items.map((x) => '<option value="' + x.id + '"' + (x.id === uf ? ' selected' : '') + '>' + esc(x.title) + '</option>').join('');
+  if (!utype || !uTypes().some((t) => t.id === utype)) utype = uTypes()[0] && uTypes()[0].id;
+  $('utedit').innerHTML = uTypes().map((t) => '<div class="row" data-id="' + t.id + '" style="margin-bottom:6px"><input class="utn" value="' + esc(t.name) + '" maxlength="40"><input class="utc" type="color" value="' + t.color + '" style="width:48px;padding:2px"></div>').join('');
+  loadUnits(uf);
+}
+function loadUnits(id) {
+  uf = id; const it = tour.floors.items.find((x) => x.id === id); if (!it) return;
+  ul = clone(it.units || []); usel = null;
+  $('uimg').src = it.plan || tour.floors.defaultPlan; drawUnits();
+}
+$('usel').onchange = () => loadUnits($('usel').value);
+function drawUnits() {
+  $('utypes').innerHTML = uTypes().map((t) => '<button class="tchip' + (t.id === utype ? ' on' : '') + '" type="button" data-id="' + t.id + '" style="background:' + t.color + '">' + esc(t.name) + '</button>').join('');
+  $('uover').innerHTML = ul.map((u) => '<div class="uu' + (u.id === usel ? ' sel' : '') + '" data-id="' + u.id + '" style="left:' + u.x * 100 + '%;top:' + u.y * 100 + '%;width:' + u.w * 100 + '%;height:' + u.h * 100 + '%;background:' + uColor(u.type) + 'b0">' + esc(u.label) + '<i class="rz" data-id="' + u.id + '"></i></div>').join('')
+    + (udraw ? '<div class="uu" style="left:' + udraw.x * 100 + '%;top:' + udraw.y * 100 + '%;width:' + udraw.w * 100 + '%;height:' + udraw.h * 100 + '%;background:#ff9f1a80"></div>' : '');
+  if (udrag) return;
+  $('ulist').innerHTML = ul.map((u) => '<div class="hs-item" data-id="' + u.id + '" style="' + (u.id === usel ? 'border-color:#ff9f1a' : '') + '"><div class="row"><select class="ut">' + uTypes().map((t) => '<option value="' + t.id + '"' + (t.id === u.type ? ' selected' : '') + '>' + esc(t.name) + '</option>').join('') + '</select><input class="ul2" value="' + esc(u.label) + '" maxlength="8" style="width:70px"><button class="btn danger del" type="button">Xoá</button></div></div>').join('') || '<p class="hint">Tầng này chưa có vùng căn hộ nào.</p>';
+}
+const uPos = (e) => { const r = $('ustage').getBoundingClientRect(); return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }; };
+$('utypes').onclick = (e) => { const b = e.target.closest('.tchip'); if (!b) return; utype = b.dataset.id; const u = ul.find((x) => x.id === usel); if (u && e.shiftKey) u.type = utype; drawUnits(); };
+$('ustage').onpointerdown = (e) => {
+  const p = uPos(e), rz = e.target.closest('.rz'), box = e.target.closest('.uu');
+  $('ustage').setPointerCapture(e.pointerId);
+  if (box && box.dataset.id) {
+    const u = ul.find((x) => x.id === box.dataset.id); usel = u.id;
+    udrag = { id: u.id, mode: rz ? 'rz' : 'mv', ox: p.x - u.x, oy: p.y - u.y }; drawUnits(); return;
+  }
+  if (!utype) return toast('Chưa có loại căn hộ');
+  usel = null; udraw = { x0: p.x, y0: p.y, x: p.x, y: p.y, w: 0, h: 0 };
+};
+$('ustage').onpointermove = (e) => {
+  const p = uPos(e);
+  if (udrag) {
+    const u = ul.find((x) => x.id === udrag.id);
+    if (udrag.mode === 'mv') { u.x = Math.min(1 - u.w, Math.max(0, p.x - udrag.ox)); u.y = Math.min(1 - u.h, Math.max(0, p.y - udrag.oy)); }
+    else { u.w = Math.max(0.01, Math.min(1 - u.x, p.x - u.x)); u.h = Math.max(0.01, Math.min(1 - u.y, p.y - u.y)); }
+    drawUnits();
+  } else if (udraw) {
+    udraw.x = Math.min(udraw.x0, p.x); udraw.y = Math.min(udraw.y0, p.y); udraw.w = Math.abs(p.x - udraw.x0); udraw.h = Math.abs(p.y - udraw.y0); drawUnits();
+  }
+};
+$('ustage').onpointerup = () => {
+  if (udrag) { udrag = null; drawUnits(); return; }
+  if (udraw) {
+    const d = udraw; udraw = null;
+    if (d.w > 0.01 && d.h > 0.01) {
+      const id = 'n' + Date.now().toString(36); const lab = $('ulabel').value || '';
+      ul.push({ id, type: utype, label: lab, x: d.x, y: d.y, w: d.w, h: d.h }); usel = id;
+      const m = lab.match(/^(\d+)(\D*)$/); if (m) $('ulabel').value = String(+m[1] + 1).padStart(m[1].length, '0') + m[2];
+    }
+    drawUnits();
+  }
+};
+$('ulist').onclick = (e) => {
+  const d = e.target.closest('.hs-item'); if (!d) return;
+  if (e.target.classList.contains('del')) { ul = ul.filter((x) => x.id !== d.dataset.id); if (usel === d.dataset.id) usel = null; drawUnits(); }
+  else { usel = d.dataset.id; drawUnits(); }
+};
+$('ulist').onchange = (e) => { const d = e.target.closest('.hs-item'), u = d && ul.find((x) => x.id === d.dataset.id); if (!u) return; if (e.target.classList.contains('ut')) u.type = e.target.value; drawUnits(); };
+$('ulist').oninput = (e) => { const d = e.target.closest('.hs-item'), u = d && ul.find((x) => x.id === d.dataset.id); if (u && e.target.classList.contains('ul2')) { u.label = e.target.value; const el = $('uover').querySelector('[data-id="' + u.id + '"]'); if (el) el.firstChild.nodeValue = u.label; } };
+addEventListener('keydown', (e) => { if ($('v-units').classList.contains('hidden') || !usel || e.key !== 'Delete' || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return; ul = ul.filter((x) => x.id !== usel); usel = null; drawUnits(); });
+$('usave').onclick = async () => {
+  try { const r = await api('/api/admin/floors/' + uf + '/units', 'PUT', { units: ul }); ul = r; toast('Đã lưu ' + r.length + ' vùng căn hộ'); await reload(); drawUnits(); } catch (er) { toast(er.message); }
+};
+$('utsave').onclick = async () => {
+  const types = [...document.querySelectorAll('#utedit .row')].map((d) => ({ id: d.dataset.id, name: d.querySelector('.utn').value, color: d.querySelector('.utc').value }));
+  try { await api('/api/admin/unit-types', 'PUT', { types }); toast('Đã lưu loại căn hộ'); await reload(); editUnits(); } catch (er) { toast(er.message); }
+};
+// ---------- Phân tầng (trang /phantang): nhãn tầng + khối tầng, toạ độ 0..1 theo ảnh mặt đứng ----------
+let ev = null, esel = null, edrag = null;
+function editElev() { ev = clone(tour.elev || { items: [] }); esel = ev.items[0] ? ev.items[0].id : null; $('eimg').src = ev.bg; drawElev(); }
+const ePos = (e) => { const r = $('estage').getBoundingClientRect(); return [Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))]; };
+function drawElev(listToo = true) {
+  $('esvg').innerHTML = ev.items.map((h) => '<path data-id="' + h.id + '" class="' + (h.id === esel ? 'sel' : '') + '" d="' + (h.poly.length ? 'M' + h.poly.map((q) => q.join(' ')).join('L') + 'Z' : '') + '"/>').join('');
+  const s = ev.items.find((h) => h.id === esel);
+  $('elbs').innerHTML = ev.items.map((h) => '<img data-id="' + h.id + '" class="' + (h.id === esel ? 'sel' : '') + '" src="' + esc(h.img || '') + '" alt="" draggable="false" style="left:' + h.x * 100 + '%;top:' + h.y * 100 + '%;width:' + h.w * 100 + '%">').join('')
+    + (s ? s.poly.map((q, i) => '<i class="ev" data-v="' + i + '" style="left:' + q[0] * 100 + '%;top:' + q[1] * 100 + '%"></i>').join('') : '');
+  if (!listToo) return;
+  const fl = tour.floors.items;
+  $('elist').innerHTML = ev.items.map((h) => '<div class="hs-item" data-id="' + h.id + '" style="' + (h.id === esel ? 'border-color:#ff9f1a' : '') + '">'
+    + '<label>Tầng<select class="ef">' + fl.map((f) => '<option value="' + f.id + '"' + (f.id === h.floorId ? ' selected' : '') + '>' + esc(f.title) + '</option>').join('') + '</select></label>'
+    + '<label>Khi bấm<select class="et"><option value="floor"' + (h.target !== 'amenity' ? ' selected' : '') + '>Mở 2D của tầng</option><option value="amenity"' + (h.target === 'amenity' ? ' selected' : '') + '>Mở phần tiện ích (frame)</option></select></label>'
+    + '<div class="row"><label>Phía<select class="es"><option value="l"' + (h.side === 'l' ? ' selected' : '') + '>Trái</option><option value="r"' + (h.side === 'r' ? ' selected' : '') + '>Phải</option></select></label><label>Rộng (%)<input class="ew" type="number" min="2" max="40" step="0.1" value="' + (h.w * 100).toFixed(1) + '"></label></div>'
+    + '<div class="row"><label class="btn" style="margin:0;text-align:center">🏷 Ảnh nhãn<input class="eimgf" type="file" accept="image/png,image/webp" hidden></label><button class="btn epoly" type="button">Vẽ lại khối</button><button class="btn danger edel" type="button">Xoá</button></div></div>').join('') || '<p class="hint">Chưa có nhãn tầng.</p>';
+}
+$('estage').onpointerdown = (e) => {
+  const p = ePos(e), v = e.target.closest('.ev'), lb = e.target.closest('#elbs img'), pa = e.target.closest('path');
+  if (v) { edrag = { v: +v.dataset.v }; }
+  else if (lb) { esel = lb.dataset.id; const h = ev.items.find((x) => x.id === esel); edrag = { lb: h, ox: p[0] - h.x, oy: p[1] - h.y }; drawElev(); }
+  else if (pa) { esel = pa.dataset.id; drawElev(); }
+  if (edrag) $('estage').setPointerCapture(e.pointerId);
+};
+$('estage').onpointermove = (e) => {
+  if (!edrag) return; const p = ePos(e);
+  if (edrag.lb) { edrag.lb.x = +(p[0] - edrag.ox).toFixed(4); edrag.lb.y = +(p[1] - edrag.oy).toFixed(4); }
+  else { const h = ev.items.find((x) => x.id === esel); h.poly[edrag.v] = [+p[0].toFixed(4), +p[1].toFixed(4)]; }
+  drawElev(false);
+};
+$('estage').onpointerup = () => { edrag = null; };
+$('estage').ondblclick = (e) => {
+  const h = ev.items.find((x) => x.id === esel); if (!h) return;
+  const v = e.target.closest('.ev');
+  if (v) { h.poly.splice(+v.dataset.v, 1); return drawElev(false); }
+  const p = ePos(e), P = h.poly;
+  if (P.length < 2) { P.push(p); return drawElev(false); }
+  // chèn vào cạnh gần nhất
+  let best = 0, bd = Infinity;
+  for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], dx = b[0] - a[0], dy = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy || 1)));
+    const d = Math.hypot(a[0] + t * dx - p[0], a[1] + t * dy - p[1]); if (d < bd) { bd = d; best = i + 1; }
+  }
+  P.splice(best, 0, [+p[0].toFixed(4), +p[1].toFixed(4)]); drawElev(false);
+};
+$('elist').onclick = (e) => {
+  const d = e.target.closest('[data-id]'); if (!d) return; const h = ev.items.find((x) => x.id === d.dataset.id);
+  if (e.target.classList.contains('edel')) { if (!confirm('Xoá nhãn tầng này?')) return; ev.items = ev.items.filter((x) => x !== h); }
+  else if (e.target.classList.contains('epoly')) { h.poly = []; toast('Nháy đúp lên ảnh để đặt từng đỉnh khối tầng'); }
+  else if (e.target.closest('select,input,label')) return;
+  esel = h.id; drawElev();
+};
+$('elist').onchange = async (e) => {
+  const d = e.target.closest('[data-id]'); if (!d) return; const h = ev.items.find((x) => x.id === d.dataset.id), c = e.target.classList;
+  if (c.contains('ef')) h.floorId = e.target.value;
+  else if (c.contains('et')) h.target = e.target.value;
+  else if (c.contains('es')) h.side = e.target.value;
+  else if (c.contains('ew')) h.w = Math.max(0.02, +e.target.value / 100);
+  else if (c.contains('eimgf')) {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { toast('Đang xử lý ảnh…'); h.img = await uploadImg(await toBlob(f, { w: 600, h: 300, mode: 'inside', type: 'image/webp', q: 0.92 })); toast('Đã tải ảnh nhãn — bấm "Lưu phân tầng"'); } catch (er) { return toast(er.message); }
+  }
+  drawElev();
+};
+$('eadd').onclick = () => { const f = tour.floors.items[0] || {}; const h = { id: 'e' + Date.now().toString(36), floorId: f.id, target: 'floor', side: 'l', x: 0.32, y: 0.5, w: 0.129, poly: [], img: '/split/matdung/hs-f40.webp' }; ev.items.push(h); esel = h.id; drawElev(); };
+$('ebg').onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { toast('Đang xử lý ảnh…'); ev.bg = await uploadImg(await toBlob(f, { w: 3200, h: 1800, mode: 'cover', type: 'image/webp', q: 0.82 })); $('eimg').src = ev.bg; toast('Đã tải ảnh nền — bấm "Lưu phân tầng"'); } catch (er) { toast(er.message); }
+};
+$('esave').onclick = async () => { try { ev = await api('/api/admin/elev', 'PUT', ev); toast('Đã lưu phân tầng'); await reload(); drawElev(); } catch (er) { toast(er.message); } };
+let fit = [], fsel = null;
+const clone = (o) => JSON.parse(JSON.stringify(o));
+function editFloors() {
+  const f = tour.floors; fit = clone(f.items); fsel = fit[0] ? fit[0].id : null;
+  drawFloors(); spOpen();
+}
+// ---------- xem trước trang Mặt bằng (iframe đúng cỡ thiết bị, thu nhỏ cho vừa) ----------
+const SP_DEV = { phone: [390, 844], phoneLand: [844, 390], tablet: [820, 1180], desktop: [1920, 1080] };
+// mặc định theo video tách tầng V2 (3540x1536)
+const SP_DEF = { phone: { cx: 0.4955, cy: 0.5, zoom: 2.144, label: 0.15 }, phoneLand: { cx: 0.4955, cy: 0.5, zoom: 1.286, label: 0.2 }, tablet: { cx: 0.4955, cy: 0.5, zoom: 1.829, label: 0.12 }, desktop: { cx: 0.4955, cy: 0.5, zoom: 1.286, label: 0.118 } };
+let spd = 'phone', spv = null, hsv = null, spEditing = false;
+const spPost = (m) => { const w = $('spframe').contentWindow; if (w) w.postMessage(m, location.origin); };
+function spFit() {
+  const [w, h] = SP_DEV[spd], b = spd === 'desktop' ? 16 : 20, box = $('spv').clientWidth - 24, maxH = Math.max(320, innerHeight - 260);
+  const k = Math.min(1, box / (w + b), maxH / (h + b));
+  $('spdev').style.transform = 'scale(' + k + ')'; $('spwrap').style.width = (w + b) * k + 'px'; $('spwrap').style.height = (h + b) * k + 'px';
+  $('spsize').textContent = w + '×' + h + ' · thu nhỏ ' + Math.round(k * 100) + '%';
+}
+function spSliders() {
+  const v = spv[spd];
+  for (const k of ['cx', 'cy', 'zoom', 'label']) { $('s' + k).value = v[k]; $('v' + k).textContent = (+v[k]).toFixed(k === 'zoom' ? 2 : 3); }
+}
+function spOpen() {
+  if (!spv) spv = clone((tour.split && tour.split.view) || SP_DEF);
+  if (!hsv) { hsv = clone((tour.split && tour.split.hotspots) || []); hsList(); }
+  if (!apv) apOpen();
+  const [w, h] = SP_DEV[spd], f = $('spframe');
+  f.width = w; f.height = h; $('spdev').className = spd === 'desktop' ? 'desktop' : '';
+  document.querySelectorAll('#spbtn .btn').forEach((b) => b.classList.toggle('on', b.dataset.d === spd));
+  f.onload = () => { spPost({ type: 'view', view: spv }); spPost({ type: 'hotspots', hotspots: hsv }); if (spEditing) spPost({ type: 'edit', on: true }); };
+  f.src = '/matbang?preview=1&d=' + spd; spFit(); spSliders();
+}
+$('spbtn').onclick = (e) => { const b = e.target.closest('[data-d]'); if (b) { spd = b.dataset.d; spOpen(); } };
+$('spctl').oninput = (e) => { const k = e.target.id.slice(1); if (!spv[spd] || !(k in spv[spd])) return; spv[spd][k] = +e.target.value; spSliders(); spPost({ type: 'view', view: spv }); };
+$('spplay').onclick = () => spPost({ type: 'play' });
+$('spreset').onclick = () => spPost({ type: 'reset' });
+$('spdef').onclick = () => { spv[spd] = { ...SP_DEF[spd] }; spSliders(); spPost({ type: 'view', view: spv }); };
+$('spsave').onclick = async () => { try { const r = await api('/api/admin/split', 'PATCH', { view: spv }); spv = clone(r.view); toast('Đã lưu khung hình Mặt bằng'); await reload(); } catch (er) { toast(er.message); } };
+addEventListener('resize', () => { if (!$('v-floors').classList.contains('hidden')) spFit(); });
+// ---------- hotspot: danh sách + nhận toạ độ kéo thả từ khung xem trước ----------
+addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'hotspots' && e.source === $('spframe').contentWindow) hsv = e.data.hotspots; });
+const hsSync = () => spPost({ type: 'hotspots', hotspots: hsv });
+function hsList() {
+  const fl = tour.floors.items;
+  $('hslist').innerHTML = hsv.map((h, i) => '<div class="hs-item" data-i="' + i + '">'
+    + (h.kind === 'floor'
+      ? '<b>Nhãn tầng</b><label>Tên<input class="ht" value="' + esc(h.title) + '" maxlength="40"></label><label>Mở tầng<select class="hf">' + fl.map((f) => '<option value="' + f.id + '"' + (f.id === h.floorId ? ' selected' : '') + '>' + esc(f.title) + '</option>').join('') + '</select></label><label>Biểu tượng<select class="hi"><option value="apt"' + (h.icon !== 'amen' ? ' selected' : '') + '>Toà căn hộ</option><option value="amen"' + (h.icon === 'amen' ? ' selected' : '') + '>Tầng tiện ích</option></select></label>'
+      : '<img src="' + esc(h.img || '') + '" alt=""><label>Tên<input class="ht" value="' + esc(h.title) + '" maxlength="40"></label><label class="btn" style="margin:0;text-align:center">🖼 Đổi ảnh<input class="hp" type="file" accept="image/*" hidden></label>')
+    + (h.card ? '<img src="' + esc(h.card) + '" alt="" style="aspect-ratio:auto;object-fit:contain;background:none">' : '') + '<label class="btn" style="margin:0;text-align:center">🏷 Ảnh thẻ (PNG nền trong)<input class="hcard" type="file" accept="image/png,image/webp" hidden></label>' + (h.card ? '<button class="btn hnocard" type="button">Bỏ ảnh thẻ (dùng thẻ dựng sẵn)</button>' : '')
+    + '<button class="btn danger hdel" type="button">Xoá</button></div>').join('') || '<p class="hint">Chưa có hotspot.</p>';
+}
+$('hslist').oninput = (e) => { const d = e.target.closest('[data-i]'); if (!d || !e.target.classList.contains('ht')) return; hsv[+d.dataset.i].title = e.target.value; hsSync(); };
+$('hslist').onchange = async (e) => {
+  const d = e.target.closest('[data-i]'); if (!d) return; const h = hsv[+d.dataset.i];
+  if (e.target.classList.contains('hf')) h.floorId = e.target.value;
+  else if (e.target.classList.contains('hi')) h.icon = e.target.value;
+  else if (e.target.classList.contains('hcard')) { // ảnh thẻ thiết kế sẵn: giữ nền trong suốt (WebP), gấp đôi cỡ hiển thị cho màn nét
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { toast('Đang xử lý ảnh…'); h.card = await uploadImg(await toBlob(f, { w: 720, h: 720, mode: 'inside', type: 'image/webp', q: 0.92 })); hsList(); toast('Đã tải ảnh thẻ — bấm "Lưu hotspot"'); } catch (er) { toast(er.message); }
+  }
+  else if (e.target.classList.contains('hp')) {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try {
+      toast('Đang xử lý ảnh…');
+      h.img = await uploadImg(await toBlob(f, { w: 360, h: 190, mode: 'cover', type: 'image/webp', q: 0.82 }));
+      h.photo = await uploadImg(await toBlob(f, { w: 2048, h: 1139, mode: 'cover', type: 'image/webp', q: 0.82 }));
+      hsList(); toast('Đã tải ảnh — bấm "Lưu hotspot" để lưu');
+    } catch (er) { toast(er.message); }
+  } else return;
+  hsSync();
+};
+$('hslist').addEventListener('click', (e) => { const d = e.target.closest('[data-i]'); if (d && e.target.classList.contains('hnocard')) { delete hsv[+d.dataset.i].card; hsList(); hsSync(); } });
+$('hslist').onclick = (e) => { const d = e.target.closest('[data-i]'); if (!d || !e.target.classList.contains('hdel') || !confirm('Xoá hotspot này?')) return; hsv.splice(+d.dataset.i, 1); hsList(); hsSync(); };
+$('hsadd').onclick = () => { hsv.push({ id: 'h' + Date.now().toString(36), kind: 'card', title: 'Tiện ích mới', x: 0.85, y: 0.75, pts: [[0.6, 0.6]] }); hsList(); hsSync(); toast('Đã thêm thẻ — bật "Sửa vị trí" để kéo vào chỗ'); };
+$('hsaddf').onclick = () => { hsv.push({ id: 'h' + Date.now().toString(36), kind: 'floor', title: 'Tầng mới', icon: 'apt', floorId: (tour.floors.items[0] || {}).id, x: 0.5, y: 0.5, pts: [] }); hsList(); hsSync(); };
+$('spedit').onclick = () => { spEditing = !spEditing; $('spedit').classList.toggle('on', spEditing); $('spedit').textContent = spEditing ? '✔ Xong sửa' : '✏️ Sửa vị trí hotspot'; spPost({ type: 'edit', on: spEditing }); };
+$('spend').onclick = () => { if (spEditing) $('spedit').click(); spPost({ type: 'end' }); };
+// ---------- sơ đồ tầng tiện ích: vùng chữ nhật cho từng tiện ích ----------
+let apv = null, apSel = null, apDrag = null;
+function apOpen() {
+  if (!apv) apv = clone((tour.split && tour.split.amenityPlan) || { items: [] });
+  if (!apSel && apv.items[0]) apSel = apv.items[0].id;
+  $('applan').src = apv.plan; apDraw(); apList();
+}
+function apDraw() {
+  $('apzones').innerHTML = apv.items.map((it) => '<div class="ar' + (it.id === apSel ? ' sel' : '') + '" data-id="' + esc(it.id) + '" style="left:' + it.x * 100 + '%;top:' + it.y * 100 + '%;width:' + it.w * 100 + '%;height:' + it.h * 100 + '%">' + esc(it.title) + (it.id === apSel ? '<i></i>' : '') + '</div>').join('');
+}
+function apList() {
+  $('aplist').innerHTML = apv.items.map((it, i) => '<div class="hs-item" data-i="' + i + '" style="' + (it.id === apSel ? 'border-color:#ff9f1a' : '') + '"><div class="row"><button class="btn pick" type="button">' + (it.id === apSel ? '● Đang chọn' : 'Chọn') + '</button><button class="btn danger del" type="button">Xoá</button></div><label>Tên nút<input class="at" value="' + esc(it.title) + '" maxlength="40"></label><label class="btn" style="margin:0;text-align:center">🖼 Ảnh tiện ích' + (it.photo ? ' (đã có)' : '') + '<input class="aimg" type="file" accept="image/*" hidden></label></div>').join('');
+}
+const apPos = (e) => { const r = $('apstage').getBoundingClientRect(); return [Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))]; };
+$('apstage').onpointerdown = (e) => {
+  const z = e.target.closest('.ar'), [px, py] = apPos(e);
+  if (z) { apSel = z.dataset.id; const it = apv.items.find((x) => x.id === apSel); apDrag = e.target.tagName === 'I' ? { it, mode: 'size' } : { it, mode: 'move', ox: px - it.x, oy: py - it.y }; }
+  else { const it = apv.items.find((x) => x.id === apSel); if (!it) return toast('Chọn tiện ích trước'); apDrag = { it, mode: 'draw', sx: px, sy: py }; }
+  $('apstage').setPointerCapture(e.pointerId); apDraw(); apList();
+};
+$('apstage').onpointermove = (e) => {
+  if (!apDrag) return; const [px, py] = apPos(e), it = apDrag.it, r4 = (v) => +v.toFixed(4);
+  if (apDrag.mode === 'move') { it.x = r4(Math.min(1 - it.w, Math.max(0, px - apDrag.ox))); it.y = r4(Math.min(1 - it.h, Math.max(0, py - apDrag.oy))); }
+  else if (apDrag.mode === 'size') { it.w = r4(Math.max(0.01, px - it.x)); it.h = r4(Math.max(0.01, py - it.y)); }
+  else { it.x = r4(Math.min(px, apDrag.sx)); it.y = r4(Math.min(py, apDrag.sy)); it.w = r4(Math.max(0.01, Math.abs(px - apDrag.sx))); it.h = r4(Math.max(0.01, Math.abs(py - apDrag.sy))); }
+  apDraw();
+};
+$('apstage').onpointerup = () => { apDrag = null; };
+$('aplist').onclick = (e) => {
+  const d = e.target.closest('[data-i]'); if (!d) return; const i = +d.dataset.i;
+  if (e.target.classList.contains('pick')) { apSel = apv.items[i].id; apDraw(); apList(); }
+  else if (e.target.classList.contains('del') && confirm('Xoá tiện ích này?')) { apv.items.splice(i, 1); apSel = apv.items[0] && apv.items[0].id; apDraw(); apList(); }
+};
+$('aplist').oninput = (e) => { const d = e.target.closest('[data-i]'); if (d && e.target.classList.contains('at')) { apv.items[+d.dataset.i].title = e.target.value; apDraw(); } };
+$('aplist').onchange = async (e) => {
+  const d = e.target.closest('[data-i]'); if (!d || !e.target.classList.contains('aimg')) return;
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { toast('Đang xử lý ảnh…'); apv.items[+d.dataset.i].photo = await uploadImg(await toBlob(f, { w: 2048, h: 1139, mode: 'cover', type: 'image/webp', q: 0.82 })); apList(); toast('Đã tải ảnh — bấm "Lưu sơ đồ tiện ích"'); } catch (er) { toast(er.message); }
+};
+$('apimg').onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { toast('Đang xử lý sơ đồ…'); apv.plan = await uploadImg(await toBlob(f, { w: 3200, h: 3200, mode: 'inside', type: 'image/webp', q: 0.88 })); $('applan').src = apv.plan; toast('Đã tải sơ đồ — bấm "Lưu sơ đồ tiện ích"'); } catch (er) { toast(er.message); }
+};
+$('apadd').onclick = () => { const id = 'a' + Date.now().toString(36); apv.items.push({ id, title: 'Tiện ích mới', x: 0.45, y: 0.45, w: 0.1, h: 0.1 }); apSel = id; apDraw(); apList(); };
+$('apsave').onclick = async () => { try { apv = await api('/api/admin/split/amenity-plan', 'PUT', apv); apDraw(); apList(); toast('Đã lưu sơ đồ tiện ích'); await reload(); } catch (er) { toast(er.message); } };
+$('hssave').onclick = async () => { try { hsv = await api('/api/admin/split/hotspots', 'PUT', { hotspots: hsv }); hsList(); hsSync(); toast('Đã lưu hotspot'); await reload(); } catch (er) { toast(er.message); } };
+const fcur = () => fit.find((x) => x.id === fsel);
+let fpvInst = null, fcamKey = '', fdev = 'desktop';
+const fvk = () => (fdev === 'mobile' ? 'viewMobile' : 'view');
+function fcamInfo() { const c = fcur(); if (!c) return; const v = c[fvk()]; $('fvinfo').textContent = (fdev === 'mobile' ? '[Điện thoại] ' : '[Laptop] ') + (v ? 'Đã đặt: yaw ' + v.yaw + ' · pitch ' + v.pitch + ' · zoom ' + v.hfov : (fdev === 'mobile' ? 'Chưa đặt (dùng hướng laptop nếu có)' : 'Chưa đặt (mặc định)')); }
+function refreshCam() {
+  const c = fcur(); $('fcam').classList.toggle('hidden', !c); if (!c) return;
+  const key = c.id + '|' + (c.pano || '') + '|' + fdev;
+  if (key === fcamKey) { fcamInfo(); return; }
+  fcamKey = key; if (fpvInst) { try { fpvInst.destroy(); } catch (e) {} fpvInst = null; }
+  $('fpv').classList.toggle('phone', fdev === 'mobile');
+  fpvInst = pannellum.viewer('fpv', Object.assign({ type: 'equirectangular', panorama: c.pano || tour.floors.defaultPano, autoLoad: true, hfov: 100 }, c[fvk()] || (fdev === 'mobile' ? c.view : null) || {}));
+  fcamInfo();
+}
+async function fSaveAll() { try { await api('/api/admin/floors', 'PUT', { items: fit }); } catch (er) { toast(er.message); } }
+$('fcd').onclick = () => { fdev = 'desktop'; $('fcd').classList.add('on'); $('fcm').classList.remove('on'); refreshCam(); };
+$('fcm').onclick = () => { fdev = 'mobile'; $('fcm').classList.add('on'); $('fcd').classList.remove('on'); refreshCam(); };
+$('fsetv').onclick = async () => { const c = fcur(); if (!c || !fpvInst) return; c[fvk()] = { yaw: +fpvInst.getYaw().toFixed(2), pitch: +fpvInst.getPitch().toFixed(2), hfov: Math.round(fpvInst.getHfov()) }; fcamInfo(); await fSaveAll(); toast('Đã đặt góc camera'); };
+$('fgov').onclick = () => { const c = fcur(), v = c && c[fvk()]; if (!v) return toast('Chưa đặt hướng'); fpvInst.setYaw(v.yaw, false); fpvInst.setPitch(v.pitch, false); fpvInst.setHfov(v.hfov, false); };
+$('fclrv').onclick = async () => { const c = fcur(); if (!c) return; delete c[fvk()]; fcamInfo(); await fSaveAll(); toast('Đã xoá góc camera'); };
+function drawFloors(skipList) {
+  const c = fcur();
+  $('ftools').classList.toggle('hidden', !c); if (c) { $('fsel').textContent = 'Đang chọn: ' + c.title; $('fimg').textContent = 'Ảnh 360: ' + (c.pano ? 'riêng' : 'mặc định (Rooftop)') + ' · Ảnh 2D: ' + (c.plan ? 'riêng' : 'mặc định'); }
+  refreshCam();
+  if (skipList) return;
+  $('flist').innerHTML = fit.map((it) => '<div class="hs-item" data-id="' + it.id + '" style="' + (it.id === fsel ? 'border-color:#ff9f1a' : '') + '"><div class="row"><button class="btn pick" type="button">' + (it.id === fsel ? '● Đang chọn' : 'Chọn') + '</button><button class="btn danger del" type="button">Xoá</button></div><label>Tiêu đề<input class="ft" value="' + esc(it.title) + '" maxlength="40"></label><label>Phụ đề<input class="fs2" value="' + esc(it.sub) + '" maxlength="40"></label></div>').join('') || '<p class="hint">Chưa có mục nào.</p>';
+}
+$('fadd').onclick = () => {
+  const id = 'n' + Date.now().toString(36); fit.push({ id, title: 'Tầng mới', sub: 'Mô tả' });
+  fsel = id; drawFloors(); toast('Đã thêm tầng');
+};
+$('flist').onclick = (e) => {
+  const d = e.target.closest('.hs-item'); if (!d) return; const id = d.dataset.id;
+  if (e.target.classList.contains('pick')) { fsel = id; drawFloors(); }
+  else if (e.target.classList.contains('del')) { if (!confirm('Xoá mục này?')) return; fit = fit.filter((x) => x.id !== id); if (fsel === id) fsel = fit[0] ? fit[0].id : null; drawFloors(); }
+};
+$('flist').oninput = (e) => {
+  const d = e.target.closest('.hs-item'); if (!d) return; const it = fit.find((x) => x.id === d.dataset.id);
+  if (e.target.classList.contains('ft')) it.title = e.target.value; else if (e.target.classList.contains('fs2')) it.sub = e.target.value; else return;
+  drawFloors(true);
+};
+const fUpload = (kind) => async (e) => {
+  const f = e.target.files[0], c = fcur(); e.target.value = ''; if (!f || !c) return;
+  try {
+    await api('/api/admin/floors', 'PUT', { items: fit }); // lưu trước để mục mới có id trên server
+    let blob; if (kind === 'pano') { await ratioCheck(f); blob = await panoBlob(f); } else blob = await toBlob(f, { w: 2400, h: 2000, mode: 'inside', type: 'image/webp', q: 0.9 });
+    const r = await api('/api/admin/floors/' + c.id + '/' + kind, 'POST', { url: await uploadImg(blob) }); c[kind] = r[kind];
+    toast(kind === 'pano' ? 'Đã đổi ảnh 360 của tầng' : 'Đã đổi ảnh 2D của tầng'); await reload(); drawFloors(true);
+  } catch (er) { toast(er.message); }
+};
+$('fpano').onchange = fUpload('pano'); $('fplan').onchange = fUpload('plan');
+$('fsave').onclick = async () => {
+  try { await api('/api/admin/floors', 'PUT', { items: fit }); toast('Đã lưu mặt bằng'); await reload(); } catch (er) { toast(er.message); }
+};
+let focusMode = null, fdrag = false, dev = 'desktop', addMode = false, homeAdd = false, sceneMoveId = null, token = localStorage.getItem('tok') || '', tour = { scenes: [] }, pv = null, pending = null, curId = null;
+const toast = (t) => { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.append(d); setTimeout(() => d.remove(), 2000); };
+// Xử lý ảnh ngay trên trình duyệt (Cloudflare Worker không có sharp): thu nhỏ rồi mới tải lên.
+// WebP nhẹ hơn JPEG ~30%; Safari cũ không xuất được WebP từ canvas thì dùng JPEG
+const DEF_TYPE = (() => { try { const c = document.createElement('canvas'); c.width = c.height = 1; return c.toDataURL('image/webp').startsWith('data:image/webp') ? 'image/webp' : 'image/jpeg'; } catch (e) { return 'image/jpeg'; } })();
+async function toBlob(file, o) { // o: { w, h, mode: 'fill' | 'cover' | 'inside', type, q }
+  const bmp = await createImageBitmap(file);
+  let cw, ch, sx = 0, sy = 0, sw = bmp.width, sh = bmp.height;
+  if (o.mode === 'inside') { const k = Math.min(1, o.w / bmp.width, o.h / bmp.height); cw = Math.round(bmp.width * k); ch = Math.round(bmp.height * k); }
+  else if (o.mode === 'cover') { cw = o.w; ch = o.h; const k = Math.max(cw / bmp.width, ch / bmp.height); sw = cw / k; sh = ch / k; sx = (bmp.width - sw) / 2; sy = (bmp.height - sh) / 2; }
+  else { cw = o.w; ch = o.h; }
+  const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+  const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(bmp, sx, sy, sw, sh, 0, 0, cw, ch); if (bmp.close) bmp.close();
+  return new Promise((ok, no) => c.toBlob((b) => (b ? ok(b) : no(new Error('Không xử lý được ảnh'))), o.type || DEF_TYPE, o.q || 0.85));
+}
+async function ratioCheck(file) { const b = await createImageBitmap(file), r = b.width / b.height; if (b.close) b.close(); if (r < 1.8 || r > 2.2) throw new Error('Ảnh phải là panorama 360 tỉ lệ 2:1'); }
+async function uploadImg(blob) { return (await api('/api/admin/assets', 'POST', blob)).url; }
+const panoBlob = (f) => toBlob(f, { w: 4096, h: 2048, mode: 'fill', q: 0.82 });
+const bgBlob = (f) => toBlob(f, { w: 1920, h: 1080, mode: 'cover', q: 0.86 });
+async function api(path, method, body, headers) {
+  const isBlob = body instanceof Blob;
+  const r = await fetch(path, { method: method || 'GET', headers: Object.assign({ Authorization: 'Bearer ' + token }, body && !isBlob ? { 'Content-Type': 'application/json' } : {}, headers || {}), body: isBlob ? body : body ? JSON.stringify(body) : undefined });
+  const j = await r.json();
+  if (r.status === 401) { showLogin(); throw new Error(j.error); }
+  if (!r.ok) throw new Error(j.error || 'Lỗi');
+  return j;
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function showLogin() { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+$('lf').onsubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: $('lu').value, pass: $('lp').value }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error);
+    token = j.token; localStorage.setItem('tok', token); start();
+  } catch (er) { $('le').textContent = er.message; }
+};
+$('logout').onclick = () => { localStorage.removeItem('tok'); token = ''; showLogin(); };
+async function reload() { tour = await (await fetch('/api/tour', { cache: 'no-store' })).json(); fillSizes(); }
+function fillSizes() { document.querySelectorAll('.hsz').forEach((i) => { if (document.activeElement !== i) i.value = tour.hotspotSize[i.dataset.k]; }); }
+document.addEventListener('click', async (e) => {
+  if (!e.target.classList.contains('savesz')) return;
+  const box = e.target.closest('.sizebox'), hotspotSize = {};
+  box.querySelectorAll('.hsz').forEach((i) => { hotspotSize[i.dataset.k] = Number(i.value); });
+  try { await api('/api/admin/settings', 'POST', { hotspotSize }); toast('Đã lưu kích thước hotspot'); await reload(); } catch (er) { toast(er.message); }
+});
+async function start() {
+  if (!token) return showLogin();
+  try { await reload(); await api('/api/admin/reorder', 'POST', { ids: tour.scenes.map((s) => s.id) }); } catch (e) { return; }
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden'); route();
+}
+async function route() {
+  await reload();
+  const m = location.hash.match(/^#\/scene\/(\w+)/), home = location.hash === '#/home', floors = location.hash === '#/floors', units = location.hash === '#/units', elev = location.hash === '#/elev';
+  $('v-elev').classList.toggle('hidden', !elev);
+  $('v-list').classList.toggle('hidden', !!m || home || floors || units || elev); $('v-floors').classList.toggle('hidden', !floors); $('v-units').classList.toggle('hidden', !units); $('v-edit').classList.toggle('hidden', !m); $('v-home').classList.toggle('hidden', !home);
+  if (elev) editElev(); else if (units) editUnits(); else if (floors) editFloors(); else if (home) editHome(); else if (m) editScene(m[1]); else renderList();
+}
+window.onhashchange = () => { if (token) route(); };
+
+function renderList() {
+  $('grid').innerHTML = tour.scenes.map((s, i) => '<div class="scene" data-id="' + s.id + '"><div class="thumb"><img loading="lazy" decoding="async" src="' + s.thumb + '" alt="' + esc(s.name) + '">' +
+  '<span class="badge ' + (s.id === tour.firstSceneId ? 'first' : '') + '">' + (s.id === tour.firstSceneId ? 'Cảnh mở đầu' : '#' + (i + 1)) + ' · ' + s.hotspots.length + ' hotspot</span></div>' +
+  '<div class="body"><input class="nm" value="' + esc(s.name) + '" aria-label="Tên cảnh">' +
+  '<div class="row"><button class="btn up" ' + (i === 0 ? 'disabled' : '') + ' type="button">▲</button><button class="btn dn" ' + (i === tour.scenes.length - 1 ? 'disabled' : '') + ' type="button">▼</button><button class="btn first" ' + (s.id === tour.firstSceneId ? 'disabled' : '') + ' type="button">Đặt mở đầu</button></div>' +
+  '<div class="row"><a class="btn primary" href="#/scene/' + s.id + '">Sửa hotspot</a><button class="btn danger del" type="button">Xoá</button></div></div></div>').join('') || '<p class="hint">Chưa có cảnh nào.</p>';
+}
+$('grid').onclick = async (e) => {
+  const card = e.target.closest('.scene'); if (!card) return;
+  const id = card.dataset.id, idx = tour.scenes.findIndex((s) => s.id === id), c = e.target.classList;
+  try {
+    if (c.contains('del')) { if (!confirm('Xoá cảnh này và các hotspot trỏ tới nó?')) return; await api('/api/admin/scenes/' + id, 'DELETE'); }
+    else if (c.contains('first')) await api('/api/admin/scenes/' + id, 'PATCH', { isFirst: true });
+    else if (c.contains('up') || c.contains('dn')) {
+      const ids = tour.scenes.map((s) => s.id), j = idx + (c.contains('up') ? -1 : 1);
+      [ids[idx], ids[j]] = [ids[j], ids[idx]]; await api('/api/admin/reorder', 'POST', { ids });
+    } else return;
+    await reload(); renderList();
+  } catch (er) { toast(er.message); }
+};
+$('grid').onchange = async (e) => {
+  if (!e.target.classList.contains('nm')) return;
+  try { await api('/api/admin/scenes/' + e.target.closest('.scene').dataset.id, 'PATCH', { name: e.target.value }); toast('Đã lưu tên'); } catch (er) { toast(er.message); }
+};
+
+$('add').onclick = () => { $('ue').textContent = ''; $('up').classList.remove('hidden'); };
+$('ucancel').onclick = () => $('up').classList.add('hidden');
+$('uok').onclick = async () => {
+  const f = $('uf').files[0]; if (!f) { $('ue').textContent = 'Chọn ảnh'; return; }
+  $('uok').disabled = true; $('uok').textContent = 'Đang xử lý…';
+  try { await ratioCheck(f); const image = await uploadImg(await panoBlob(f)); const thumb = await uploadImg(await toBlob(f, { w: 480, h: 240, mode: 'fill', q: 0.7 })); await api('/api/admin/scenes', 'POST', { name: $('un').value, image, thumb }); $('up').classList.add('hidden'); $('uf').value = ''; await reload(); renderList(); }
+  catch (er) { $('ue').textContent = er.message; }
+  $('uok').disabled = false; $('uok').textContent = 'Tải lên';
+};
+
+const vkey = () => (dev === 'mobile' ? 'viewMobile' : 'view');
+function showView(s) { const vw = s[vkey()]; $('viewinfo').textContent = vw ? (dev === 'mobile' ? '[Điện thoại] ' : '[Laptop] ') + 'Đã đặt: yaw ' + vw.yaw + ' · pitch ' + vw.pitch + ' · zoom ' + vw.hfov : (dev === 'mobile' ? '[Điện thoại] Chưa đặt (dùng hướng của laptop nếu có). ' : '[Laptop] Chưa đặt (mặc định: nhìn thẳng, zoom 100). ') + ' Xoay ảnh tới hướng mong muốn rồi bấm "Đặt hướng hiện tại".'; }
+async function saveView(view) {
+  try { await api('/api/admin/scenes/' + curId, 'PATCH', { view, device: dev }); await reload(); showView(tour.scenes.find((x) => x.id === curId)); toast(view ? 'Đã đặt hướng camera' : 'Đã xoá hướng camera'); } catch (er) { toast(er.message); }
+}
+$('setview').onclick = () => saveView({ yaw: +pv.getYaw().toFixed(2), pitch: +pv.getPitch().toFixed(2), hfov: Math.round(pv.getHfov()) });
+$('clrview').onclick = () => saveView(null);
+$('gotoview').onclick = () => { const v = tour.scenes.find((x) => x.id === curId)[vkey()]; if (!v) return toast('Chưa đặt hướng'); pv.setYaw(v.yaw, false); pv.setPitch(v.pitch, false); pv.setHfov(v.hfov, false); };
+function setDev(d) {
+  dev = d; $('devd').classList.toggle('on', d === 'desktop'); $('devm').classList.toggle('on', d === 'mobile');
+  $('pv').classList.toggle('phone', d === 'mobile');
+  const s = tour.scenes.find((x) => x.id === curId); showView(s);
+  setTimeout(() => { pv.resize(); const v = s[vkey()] || (d === 'mobile' ? s.view : null); if (v) { pv.setYaw(v.yaw, false); pv.setPitch(v.pitch, false); pv.setHfov(v.hfov, false); } }, 50);
+}
+$('devd').onclick = () => setDev('desktop'); $('devm').onclick = () => setDev('mobile');
+function setAdd(on) {
+  addMode = on; const b = $('addhs'); if (!b) return;
+  b.classList.toggle('on', on); b.textContent = on ? 'Bấm vào ảnh để chọn vị trí… (bấm lại để huỷ)' : '+ Thêm hotspot';
+  if (!on && pv) { pending = null; try { pv.removeHotSpot('__new'); } catch (e) {} $('newbox').classList.add('hidden'); }
+}
+$('addhs').onclick = () => { sceneMoveId = null; setAdd(!addMode); };
+function editScene(id) {
+  const s = tour.scenes.find((x) => x.id === id); if (!s) { location.hash = '#/'; return; }
+  curId = id; pending = null; $('newbox').classList.add('hidden'); $('et').textContent = 'Hotspot: ' + s.name;
+  if (pv) { try { pv.destroy(); } catch (e) {} }
+  const spots = s.hotspots.map((h) => ({ id: h.id, pitch: h.pitch, yaw: h.yaw, text: h.text, cssClass: 'ahs', type: 'info' }));
+  pv = pannellum.viewer('pv', Object.assign({ type: 'equirectangular', panorama: s.image, autoLoad: true, hfov: 100, hotSpots: spots }, s[vkey()] || (dev === 'mobile' ? s.view : null) || {}));
+  showView(s); $('pv').classList.toggle('phone', dev === 'mobile');
+  sceneMoveId = null; setAdd(false);
+  const pvEl = $('pv');
+  if (pvEl._cap) { pvEl.removeEventListener('mousedown', pvEl._cap, true); removeEventListener('mousemove', pvEl._mm); removeEventListener('mouseup', pvEl._mu); }
+  let drag = null;
+  const place = (ev) => { const c = pv.mouseEventToCoords(ev); drag.last = { pitch: +c[0].toFixed(2), yaw: +c[1].toFixed(2) }; try { pv.removeHotSpot(drag.id); } catch (e) {} pv.addHotSpot({ id: drag.id, pitch: drag.last.pitch, yaw: drag.last.yaw, text: drag.text, cssClass: 'ahs mv', type: 'info' }); };
+  pvEl._cap = (ev) => { if (!sceneMoveId) return; ev.stopImmediatePropagation(); ev.preventDefault(); const h = s.hotspots.find((x) => x.id === sceneMoveId); drag = { id: h.id, text: h.text }; place(ev); };
+  pvEl._mm = (ev) => { if (drag) place(ev); };
+  pvEl._mu = async () => {
+    if (!drag) return; const d = drag; drag = null; sceneMoveId = null;
+    try { await api('/api/admin/hotspots/' + d.id, 'PATCH', d.last); toast('Đã đổi vị trí'); await reload(); } catch (er) { toast(er.message); }
+    editScene(curId);
+  };
+  pvEl.addEventListener('mousedown', pvEl._cap, true); addEventListener('mousemove', pvEl._mm); addEventListener('mouseup', pvEl._mu);
+  pv.on('mousedown', (ev) => {
+    if (!addMode || sceneMoveId) return;
+    const c = pv.mouseEventToCoords(ev);
+pending = { pitch: +c[0].toFixed(2), yaw: +c[1].toFixed(2) };
+    try { pv.removeHotSpot('__new'); } catch (e) {}
+    pv.addHotSpot({ id: '__new', pitch: pending.pitch, yaw: pending.yaw, cssClass: 'ahs new', type: 'info', text: 'Hotspot mới' });
+    $('newbox').classList.remove('hidden');
+  });
+  const others = tour.scenes.filter((x) => x.id !== id);
+  $('nt').innerHTML = others.map((o) => '<option value="' + o.id + '">' + esc(o.name) + '</option>').join('');
+  $('nx').value = others[0] ? others[0].name : '';
+  $('nt').onchange = () => { const o = others.find((x) => x.id === $('nt').value); $('nx').value = o ? o.name : ''; };
+  renderHs(s);
+}
+function renderHs(s) {
+  const others = tour.scenes.filter((x) => x.id !== s.id);
+  $('hlist').innerHTML = s.hotspots.map((h) => '<div class="hs-item" data-id="' + h.id + '"><label>Cảnh đích<select class="t">' +
+    others.map((o) => '<option value="' + o.id + '"' + (o.id === h.target ? ' selected' : '') + '>' + esc(o.name) + '</option>').join('') + '</select></label>' +
+    '<label>Nhãn<input class="x" value="' + esc(h.text) + '" maxlength="80"></label><span class="hint">pitch ' + h.pitch + ' · yaw ' + h.yaw + '</span>' +
+    '<div class="row"><button class="btn sv" type="button">Lưu</button><button class="btn mv" type="button">Đặt vị trí mới</button><button class="btn danger rm" type="button">Xoá</button></div></div>').join('') || '<p class="hint">Chưa có hotspot.</p>';
+}
+$('ncancel').onclick = () => setAdd(false);
+$('nsave').onclick = async () => {
+  if (!pending || !$('nt').value) return toast('Chọn vị trí và cảnh đích');
+  try { await api('/api/admin/scenes/' + curId + '/hotspots', 'POST', Object.assign({}, pending, { target: $('nt').value, text: $('nx').value })); toast('Đã thêm hotspot'); await reload(); editScene(curId); } catch (er) { toast(er.message); }
+};
+$('hlist').onclick = async (e) => {
+  const it = e.target.closest('.hs-item'); if (!it) return; const id = it.dataset.id, c = e.target.classList;
+  try {
+    if (c.contains('sv')) { await api('/api/admin/hotspots/' + id, 'PATCH', { target: it.querySelector('.t').value, text: it.querySelector('.x').value }); toast('Đã lưu'); }
+    else if (c.contains('rm')) { if (!confirm('Xoá hotspot?')) return; await api('/api/admin/hotspots/' + id, 'DELETE'); }
+    else if (c.contains('mv')) {
+      if (sceneMoveId === id) { sceneMoveId = null; editScene(curId); return; }
+      setAdd(false); sceneMoveId = id; const h = tour.scenes.find((x) => x.id === curId).hotspots.find((x) => x.id === id);
+      try { pv.removeHotSpot(id); } catch (er) {} pv.addHotSpot({ id, pitch: h.pitch, yaw: h.yaw, text: h.text, cssClass: 'ahs mv', type: 'info' });
+      pv.setPitch(h.pitch); pv.setYaw(h.yaw);
+      document.querySelectorAll('#hlist .mv').forEach((b) => { b.classList.remove('on'); b.textContent = 'Đặt vị trí mới'; });
+      e.target.classList.add('on'); e.target.textContent = 'Kéo điểm cam trên ảnh…'; return;
+    }
+    else return;
+    await reload(); editScene(curId);
+  } catch (er) { toast(er.message); }
+};
+
+let hp = null, moveId = null, dragging = false;
+function editHome() {
+  focusMode = null; fdrag = false; $('hfp').classList.remove('on'); $('hft').classList.remove('on'); $('hfhint').hidden = true; moveId = null; homeAdd = false; $('haddhs').classList.remove('on'); $('haddhs').textContent = '+ Thêm hotspot'; hp = null; $('hnew').classList.add('hidden'); drawHome();
+  const others = tour.scenes;
+  $('hnt').innerHTML = others.map((o) => '<option value="' + o.id + '">' + esc(o.name) + '</option>').join('');
+  $('hnx').value = others[0] ? others[0].name : '';
+  $('hnt').onchange = () => { const o = others.find((x) => x.id === $('hnt').value); $('hnx').value = o ? o.name : ''; };
+}
+const fdef = () => (tour.home.focus && tour.home.focus[focusMode]) || { x: 960 };
+const cropHtml = () => { const f = fdef().x, wpx = 1080 * (focusMode === 'tablet' ? 3 / 4 : 390 / 800); return '<i class="crop" style="left:' + (f - wpx / 2) / 19.2 + '%;width:' + wpx / 19.2 + '%"></i>'; };
+function setFocus(d) {
+  focusMode = d || null; $('hfp').classList.toggle('on', d === 'phone'); $('hft').classList.toggle('on', d === 'tablet'); $('hfhint').hidden = !d;
+  if (d) { moveId = null; setHomeAdd(false); }
+  drawHome();
+}
+$('hfp').onclick = () => setFocus(focusMode === 'phone' ? null : 'phone');
+$('hft').onclick = () => setFocus(focusMode === 'tablet' ? null : 'tablet');
+const fdef2 = () => tour.home.focus[focusMode].x;
+const setFx = (x) => { tour.home.focus = Object.assign({}, tour.home.focus, { [focusMode]: { x, y: 540 } }); drawHome(); };
+function setHomeAdd(on) {
+  homeAdd = on; const b = $('haddhs'); b.classList.toggle('on', on); b.textContent = on ? 'Bấm vào ảnh để chọn vị trí… (bấm lại để huỷ)' : '+ Thêm hotspot';
+  if (!on) { hp = null; $('hnew').classList.add('hidden'); drawHome(); }
+}
+$('haddhs').onclick = () => { moveId = null; if (focusMode) setFocus(null); setHomeAdd(!homeAdd); };
+function drawHome() {
+  const h = tour.home, st = $('hstage');
+  st.style.backgroundImage = 'url(' + h.bg + ')';
+  st.innerHTML = h.hotspots.map((x, i) => '<i class="hm' + (x.id === moveId ? ' mv' : '') + '" style="left:' + x.x / 19.2 + '%;top:' + x.y / 10.8 + '%">' + (i + 1) + '</i>').join('') + (focusMode ? cropHtml() : '') + (hp ? '<i class="hm new" style="left:' + hp.x / 19.2 + '%;top:' + hp.y / 10.8 + '%">+</i>' : '');
+  $('hhlist').innerHTML = h.hotspots.map((x, i) => '<div class="hs-item" data-id="' + x.id + '"><b>#' + (i + 1) + '</b><label>Cảnh đích<select class="t">' +
+    tour.scenes.map((o) => '<option value="' + o.id + '"' + (o.id === x.target ? ' selected' : '') + '>' + esc(o.name) + '</option>').join('') + '</select></label>' +
+    '<label>Nhãn<input class="x" value="' + esc(x.text) + '" maxlength="80"></label><span class="hint">x ' + x.x + ' · y ' + x.y + '</span>' +
+    '<div class="row"><button class="btn sv" type="button">Lưu</button><button class="btn mv' + (x.id === moveId ? ' on' : '') + '" type="button">' + (x.id === moveId ? 'Kéo điểm cam trên ảnh…' : 'Đặt vị trí mới') + '</button><button class="btn danger rm" type="button">Xoá</button></div></div>').join('') || '<p class="hint">Chưa có hotspot.</p>';
+}
+const stagePos = (e) => { const r = $('hstage').getBoundingClientRect(); return { x: Math.min(1920, Math.max(0, Math.round((e.clientX - r.left) / r.width * 1920))), y: Math.min(1080, Math.max(0, Math.round((e.clientY - r.top) / r.height * 1080))) }; };
+const moveMarker = (p) => { const m = $('hstage').querySelector('.hm.mv'); if (m) { m.style.left = p.x / 19.2 + '%'; m.style.top = p.y / 10.8 + '%'; } };
+$('hstage').onpointerdown = (e) => {
+  const p = stagePos(e);
+  if (focusMode) { fdrag = true; $('hstage').setPointerCapture(e.pointerId); setFx(p.x); return; }
+  if (moveId) { dragging = true; $('hstage').setPointerCapture(e.pointerId); moveMarker(p); $('hstage')._last = p; return; }
+  if (!homeAdd) return;
+  hp = p; $('hnew').classList.remove('hidden'); drawHome();
+};
+$('hstage').onpointermove = (e) => { if (fdrag) { setFx(stagePos(e).x); return; } if (dragging) { const p = stagePos(e); $('hstage')._last = p; moveMarker(p); } };
+$('hstage').onpointerup = async () => {
+  if (fdrag) { fdrag = false; try { await api('/api/admin/home/focus', 'POST', { device: focusMode, x: fdef2() }); toast('Đã lưu vị trí ảnh (' + (focusMode === 'tablet' ? 'tablet' : 'điện thoại') + ')'); await reload(); } catch (er) { toast(er.message); } drawHome(); return; }
+  if (!dragging) return; dragging = false;
+  const id = moveId, p = $('hstage')._last; moveId = null;
+  try { await api('/api/admin/home/hotspots/' + id, 'PATCH', p); toast('Đã đổi vị trí'); await reload(); } catch (er) { toast(er.message); }
+  drawHome();
+};
+$('hncancel').onclick = () => setHomeAdd(false);
+$('hnsave').onclick = async () => {
+  if (!hp || !$('hnt').value) return toast('Chọn vị trí và cảnh đích');
+  try { await api('/api/admin/home/hotspots', 'POST', Object.assign({}, hp, { target: $('hnt').value, text: $('hnx').value })); toast('Đã thêm hotspot'); await reload(); editHome(); } catch (er) { toast(er.message); }
+};
+$('hhlist').onclick = async (e) => {
+  const it = e.target.closest('.hs-item'); if (!it) return; const id = it.dataset.id, c = e.target.classList;
+  try {
+    if (c.contains('sv')) { await api('/api/admin/home/hotspots/' + id, 'PATCH', { target: it.querySelector('.t').value, text: it.querySelector('.x').value }); toast('Đã lưu'); }
+    else if (c.contains('rm')) { if (!confirm('Xoá hotspot?')) return; await api('/api/admin/home/hotspots/' + id, 'DELETE'); }
+    else if (c.contains('mv')) { moveId = moveId === id ? null : id; homeAdd = false; $('haddhs').classList.remove('on'); $('haddhs').textContent = '+ Thêm hotspot'; hp = null; $('hnew').classList.add('hidden'); drawHome(); return; }
+    else return;
+    await reload(); editHome();
+  } catch (er) { toast(er.message); }
+};
+$('hbg').onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  try { await api('/api/admin/home/bg', 'POST', { url: await uploadImg(await bgBlob(f)) }); toast('Đã đổi ảnh nền'); await reload(); drawHome(); } catch (er) { toast(er.message); }
+  e.target.value = '';
+};
+start();
+</script>
+</body>
+</html>

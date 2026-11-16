@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pristine Tower - View 360</title>
+<link rel="stylesheet" href="/vendor/pannellum.css">
+<link rel="preload" href="/fonts/DFVN-Gatsby-Gilmour.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/api/tour" as="fetch" crossorigin="anonymous">
+<link rel="modulepreload" href="/menu.js">
+<style>
+:root{--gold:#f3e6c8;--pill:rgba(70,56,48,.82)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#111;overflow:hidden;font-family:"DFVN Gatsby Gilmour",Georgia,"Times New Roman",serif;font-weight:500;color:var(--gold);user-select:none}
+#pano{position:absolute;inset:0}
+.pill{position:absolute;background:var(--pill);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(8px);z-index:10;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+#scenebar{top:110px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:0;border-radius:40px;width:280px;height:46px;justify-content:space-between;padding:0 14px;font-size:16px;letter-spacing:.5px}
+#scenebar button{background:none;border:0;color:var(--gold);font-size:22px;cursor:pointer;padding:6px 8px}
+#scenebar span{flex:1;text-align:center;font-weight:600}
+#burger{top:16px;left:20px;width:40px;height:40px;border-radius:50%;display:flex;flex-direction:column;gap:5px;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.18)}
+#burger i{width:18px;height:2px;background:var(--gold);display:block}
+#menu{position:absolute;top:66px;left:20px;z-index:11;background:var(--pill);border-radius:14px;padding:8px;display:none;flex-direction:column;min-width:200px;max-height:70vh;overflow:auto}
+#menu.open{display:flex}
+#menu button{background:none;border:0;color:var(--gold);text-align:left;font:inherit;font-size:16px;text-transform:uppercase;letter-spacing:.3px;padding:9px 12px;border-radius:8px;cursor:pointer}
+#menu button:hover,#menu button.active{background:rgba(255,255,255,.14)}
+#nav{bottom:18px;left:50%;transform:translateX(-50%);border-radius:40px;display:flex;gap:30px;padding:0 32px;height:58px;align-items:center;font-size:18px;font-weight:600;letter-spacing:.5px;white-space:nowrap}
+#nav a{color:var(--gold);text-decoration:none;padding:6px 0;border-bottom:2px solid transparent}
+#nav a.active{border-bottom-color:var(--gold)}
+#side{left:0;top:50%;transform:translateY(-50%) rotate(180deg);writing-mode:vertical-rl;font-size:10px;padding:10px 6px;border-radius:0 8px 8px 0;background:rgba(240,235,225,.85);color:#7a5a3a;letter-spacing:1px}
+#note{position:absolute;right:20px;bottom:14px;font:500 12px "DFVN Gatsby Gilmour",Georgia,serif;letter-spacing:.2px;color:rgba(255,255,255,.6);z-index:5}
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#111;z-index:20;font-size:20px}
+.hs{box-sizing:border-box;width:var(--hs,34px);height:var(--hs,34px);border-radius:50%;background:rgba(255,255,255,.28);border:2px solid #fff;box-shadow:0 0 0 0 rgba(255,255,255,.7);animation:pulse 2s infinite;cursor:pointer}
+.hs::after{content:"";position:absolute;inset:26%;border-radius:50%;background:#fff}
+.pnlm-tooltip span{background:rgba(31,23,17,.62)!important;color:#EFEEEA!important;font:500 14px/18px "DFVN Gatsby Gilmour",Georgia,serif!important;letter-spacing:.3px;text-transform:uppercase;padding:7px 16px!important;border-radius:20px!important;border:1px solid rgba(239,238,234,.45);box-shadow:0 0 10px rgba(0,0,0,.3);backdrop-filter:blur(4px);white-space:nowrap;max-width:none!important}
+.pnlm-tooltip span:after{display:none!important}
+.pnlm-title-box{display:none!important}
+@keyframes pulse{70%{box-shadow:0 0 0 16px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+@media(max-width:700px){#burger{top:120px;left:16px}#menu{top:170px;left:16px}}
+@media(max-width:700px){#nav{gap:8px;padding:0 12px;font-size:11px;height:46px;width:96vw;justify-content:space-between}#scenebar{width:230px}}
+</style>
+</head>
+<body>
+<div id="loading">Đang tải…</div>
+<div id="pano"></div>
+<div id="burger" class="pill" role="button" aria-label="Menu" tabindex="0"><i></i><i></i><i></i></div>
+<div id="menu"></div>
+<div id="ui"></div>
+<div id="note">Hình ảnh phối cảnh mang tính chất minh họa</div>
+<script src="/vendor/pannellum.js" defer></script>
+<script type="module">
+import { initMenu, applyHotspotSize } from '/menu.js';
+initMenu(document.getElementById('ui'), 'fly'); // ảnh 360 mở từ hotspot Flycam → công tắc ở Flycam
+(async () => {
+  const tour = await (await fetch('/api/tour')).json();
+  applyHotspotSize(tour.hotspotSize);
+  const loading = document.getElementById('loading');
+  if (!tour.scenes.length) { loading.textContent = 'Chưa có ảnh 360. Vào /admin để thêm.'; return; }
+  const isMobile = matchMedia('(max-width:768px), (orientation:portrait)').matches;
+  // ảnh 360 chất lượng cao (từ ảnh gốc 9000px): 8K cho máy tính GPU đủ mạnh, 4K cho điện thoại / mạng yếu
+  const HQ = { '/uploads/a41440c63mvkog9vm.jpg': 'cam07', '/uploads/a086304e0mvkohcp5.jpg': 'cam01', '/uploads/aea12b56amvkoi73w.jpg': 'cam03', '/uploads/abf3d2538mvkojcaf.jpg': 'cam06' };
+  const conn = navigator.connection || {}, slow = conn.saveData || /(^|-)2g|3g/.test(conn.effectiveType || '');
+  const maxTex = (() => { try { const g = document.createElement('canvas').getContext('webgl'); return g ? g.getParameter(g.MAX_TEXTURE_SIZE) : 0; } catch (e) { return 0; } })();
+  const big = maxTex >= 8192 && !slow && !matchMedia('(max-width:1024px), (pointer:coarse)').matches;
+  // luôn mở bằng 4K (hiện nhanh), sau đó nâng lên 8K ở nền nếu máy đủ mạnh — kể cả mạng chậm / tiết kiệm dữ liệu (đợi lúc rảnh)
+  const hq = (u, r) => { const k = HQ[String(u).split('?')[0]]; return k ? `/home/scenes/${k}-${r}.webp?v=3` : null; };
+  // mạng chậm / tiết kiệm dữ liệu: mở bằng 2K (~200 KB, hiện nhanh), lúc rảnh mới nâng lên 4K
+  const pick = (u) => hq(u, slow ? '2k' : '4k') || u;
+  const scenes = {};
+  for (const s of tour.scenes) {
+    scenes[s.id] = {
+      title: s.name, type: 'equirectangular', panorama: pick(s.image), preview: s.thumb, autoLoad: true,
+      ...((isMobile && s.viewMobile) || s.view || {}),
+      hotSpots: s.hotspots.map((h) => ({ id: h.id, pitch: h.pitch, yaw: h.yaw, type: 'scene', text: h.text, sceneId: h.target, cssClass: 'hs' }))
+    };
+  }
+  const ids = tour.scenes.map((s) => s.id);
+  const viewer = pannellum.viewer('pano', {
+    default: { firstScene: (tour.scenes.find((s) => s.id === new URLSearchParams(location.search).get("scene")) ? new URLSearchParams(location.search).get("scene") : tour.firstSceneId), sceneFadeDuration: 800, showControls: false, hfov: 100 },
+    scenes
+  });
+  const menu = document.getElementById('menu');
+  menu.innerHTML = tour.scenes.map((s) => `<button type="button" data-id="${s.id}">${s.name}</button>`).join('');
+  // nạp sẵn ảnh các cảnh mà hotspot đang trỏ tới (lúc rảnh) để chuyển cảnh gần như tức thì
+  const warmed = new Set();
+  const idle = (fn) => (window.requestIdleCallback || ((f) => setTimeout(f, 800)))(fn, { timeout: slow ? 6000 : 2000 });
+  // nâng cảnh đang xem lên 8K: tải + giải mã ở nền, xong mới thay (giữ nguyên hướng nhìn), không thay khi đang kéo
+  const src8k = {}; tour.scenes.forEach((s) => { src8k[s.id] = big ? hq(s.image, '8k') : slow ? hq(s.image, '4k') : null; });
+  const upgraded = new Set(); let dragging = false, upBusy = false;
+  const upgrade = () => {
+    const id = viewer.getScene(), u = src8k[id];
+    if (!u || upgraded.has(id) || upBusy) return;
+    upBusy = true;
+    const run = () => { const im = new Image(); im.fetchPriority = 'low';
+      im.onload = () => { upBusy = false; upgraded.add(id); scenes[id].panorama = u; swap(id); };
+      im.onerror = () => { upBusy = false; }; im.src = u; };
+    slow ? idle(run) : setTimeout(run, 300);
+  };
+  const swap = (id) => {
+    if (viewer.getScene() !== id) return;
+    if (dragging) return setTimeout(() => swap(id), 500);
+    viewer.loadScene(id, viewer.getPitch(), viewer.getYaw(), viewer.getHfov());
+  };
+  viewer.on('mousedown', () => { dragging = true; }); viewer.on('mouseup', () => { dragging = false; });
+  viewer.on('touchstart', () => { dragging = true; }); viewer.on('touchend', () => { dragging = false; });
+  const warm = () => {
+    idle(async () => {
+      for (const h of scenes[viewer.getScene()].hotSpots || []) {
+        const u = scenes[h.sceneId] && scenes[h.sceneId].panorama;
+        if (!u || warmed.has(u)) continue;
+        warmed.add(u);
+        await new Promise((res) => { const im = new Image(); im.fetchPriority = 'low'; im.onload = im.onerror = res; im.src = u; });
+        if (slow) break; // mạng chậm: mỗi lần rảnh chỉ nạp sẵn 1 cảnh
+      }
+    });
+  };
+  const sync = () => {
+    const cur = viewer.getScene();
+    menu.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === cur));
+  };
+  viewer.on('load', () => { loading.style.display = 'none'; sync(); upgrade(); warm(); });
+  viewer.on('scenechange', sync);
+  document.getElementById('burger').onclick = () => menu.classList.toggle('open');
+  menu.onclick = (e) => { const id = e.target.dataset?.id; if (id) { viewer.loadScene(id); menu.classList.remove('open'); } };
+  window.viewer = viewer;
+})();
+</script>
+</body>
+</html>

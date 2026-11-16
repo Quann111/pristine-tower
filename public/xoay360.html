@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Xoay 360 - Pristine Tower</title>
+<link rel="preload" href="/fonts/DFVN-Gatsby-Gilmour.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/SVN-Spyrel-Medium.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="/menu.js">
+<script>
+// Chọn độ phân giải khung hình theo màn hình + mật độ điểm ảnh + chất lượng mạng, và nạp sớm khung đầu tiên.
+(function () {
+  // khung 16:9 được phủ kín màn hình → bề rộng cần = max(bề ngang, bề cao × 16/9) × mật độ điểm ảnh
+  var c = navigator.connection || {}, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var sw = Math.max(screen.width, innerWidth), sh = Math.max(screen.height, innerHeight), need = Math.max(sw, sh * 16 / 9) * dpr;
+  var phone = Math.min(screen.width, screen.height) < 600;
+  // ảnh gốc 1920px: không phóng to quá gốc; điện thoại tối đa 1280 để tải nhanh
+  var w = need <= 1000 ? 960 : need <= 1400 || phone ? 1280 : 1920;
+  if (c.saveData || /(^|-)2g|3g/.test(c.effectiveType || '')) w = w > 960 ? (w === 1920 ? 1280 : 960) : 960;
+  window.__FRAME_W = w;
+  var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.href = '/frames/' + w + '/f_000.webp?v=4'; l.setAttribute('fetchpriority', 'high'); document.head.appendChild(l);
+})();
+</script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#e9eef2;overflow:hidden;user-select:none;-webkit-user-select:none;font-family:"DFVN Gatsby Gilmour",Georgia,serif;font-weight:500;touch-action:none;overscroll-behavior:none}
+#stage{position:fixed;inset:0}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#cv.drag{cursor:grabbing}
+#stage::after{content:"";position:absolute;left:0;right:0;top:0;height:140px;background:linear-gradient(rgba(31,23,17,.38),rgba(31,23,17,0));pointer-events:none}
+#logo{position:fixed;left:22px;top:18px;width:128px;height:auto;z-index:13;pointer-events:none;filter:drop-shadow(0 0 4px rgba(0,0,0,.4))}
+#bar{position:fixed;left:0;top:0;height:3px;width:0;background:#EFEEEA;box-shadow:0 0 6px rgba(0,0,0,.4);z-index:30;transition:width .2s,opacity .6s}
+#loading{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(ellipse at 50% 0%,#6b5442,#24150e);color:#EFEEEA;text-transform:uppercase;letter-spacing:.12em;font-size:15px;transition:opacity .5s}
+#loading i{display:block;width:180px;height:3px;background:rgba(239,238,234,.25);border-radius:3px;overflow:hidden}
+#loading i b{display:block;height:100%;width:0;background:#EFEEEA;transition:width .2s}
+#hint{position:fixed;left:50%;bottom:calc(max(12px,2.96vh) + 58px + 22px);transform:translateX(-50%);z-index:11;display:flex;align-items:center;gap:12px;padding:8px 20px;border-radius:22px;background:rgba(31,23,17,.5);border:1px solid rgba(239,238,234,.45);box-shadow:0 0 10px rgba(0,0,0,.25);backdrop-filter:blur(4px);color:#EFEEEA;font-size:14px;letter-spacing:.08em;text-transform:uppercase;pointer-events:none;transition:opacity .6s}
+#hint svg{width:22px;height:22px;animation:sway 1.8s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:translateX(-5px)}50%{transform:translateX(5px)}}
+#hint.gone{opacity:0}
+#loading.gone{opacity:0;pointer-events:none}
+@media(max-width:700px){#logo{top:14px;left:16px;width:96px}#hint{font-size:12px;padding:6px 14px}}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="loading"><span>Đang tải</span><i><b id="lbar"></b></i><span id="lpct">0%</span></div>
+<div id="stage"><canvas id="cv" aria-label="Mô hình tổng thể 360°, kéo ngang để xoay"></canvas></div>
+<img id="logo" src="/brand/logo.webp" alt="Logo" width="128" height="29" draggable="false">
+<div id="hint"><svg viewBox="0 0 24 24" fill="none" stroke="#EFEEEA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>Kéo để xoay 360°</div>
+<div id="ui"></div>
+<script type="module">
+import { initMenu } from '/menu.js';
+initMenu(document.getElementById('ui'), 'xoay', { tab: 'tongthe' });
+
+const N = 120, W = window.__FRAME_W || 1920, VER = 4;
+const DIR = 1; // +1: kéo sang phải → khung giảm (cảnh quay theo tay). Đổi -1 nếu video quay ngược chiều.
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d', { alpha: false });
+const url = (i) => `/frames/${W}/f_${String(i).padStart(3, '0')}.webp?v=${VER}`;
+const wrap = (v) => ((v % N) + N) % N;
+const touch = matchMedia('(pointer:coarse)').matches || innerWidth < 800;
+
+// ---------- nạp khung hình: ưu tiên khung đầu + các khung cách đều, rồi nạp dần phần còn lại ----------
+const frames = new Array(N); let ready = 0, started = false;
+const bar = document.getElementById('bar'), lbar = document.getElementById('lbar'), lpct = document.getElementById('lpct'), loading = document.getElementById('loading');
+const COARSE = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+const isReady = (i) => !!(frames[i] && frames[i].ok);
+function load(i, prio = 'low') {
+  i = wrap(Math.floor(i));
+  if (frames[i]) { if (prio === 'high' && !frames[i].ok) frames[i].img.fetchPriority = 'high'; return frames[i].p; }
+  const img = new Image(); img.decoding = 'async'; img.fetchPriority = prio;
+  const f = (frames[i] = { img, ok: false });
+  f.p = new Promise((res) => {
+    // đánh dấu sẵn sàng ngay khi tải xong (không chờ decode, vì tab nền có thể không bao giờ decode xong) rồi yêu cầu vẽ lại
+    img.onload = () => { f.ok = true; ready++; dirty = true; progress(); schedule(); res(); if (img.decode) img.decode().catch(() => {}); };
+    img.onerror = () => { frames[i] = null; res(); };
+  });
+  img.src = url(i);
+  return f.p;
+}
+function progress() {
+  const pct = Math.round((ready / N) * 100);
+  bar.style.width = pct + '%'; if (pct >= 100) setTimeout(() => (bar.style.opacity = 0), 400);
+  if (!started) { const c = COARSE.filter(isReady).length, p = Math.round((c / COARSE.length) * 100); lbar.style.width = p + '%'; lpct.textContent = p + '%'; }
+}
+async function boot() {
+  await load(0, 'high'); schedule(); // hiện ngay khung đầu
+  await Promise.all(COARSE.slice(1).map((i) => load(i, 'high')));
+  started = true; loading.classList.add('gone'); schedule();
+  // phần còn lại: nạp dần theo lô để không chặn thao tác
+  const rest = Array.from({ length: N }, (_, i) => i).filter((i) => !COARSE.includes(i));
+  const batch = touch ? 3 : 6, gap = touch ? 120 : 50;
+  (function next() { const part = rest.splice(0, batch); part.forEach((i) => load(i)); if (rest.length) setTimeout(next, gap); })();
+}
+
+// ---------- vẽ: mỗi lúc chỉ hiện đúng một khung gần nhất (không chồng hai khung nên không bị mờ) ----------
+let pos = 0, dirty = true, raf = 0, cw = 0, ch = 0;
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, 2), w = Math.round(innerWidth * dpr), h = Math.round(innerHeight * dpr);
+  const sc = Math.min(1, (W * 1.25) / w); // không cần canvas lớn hơn độ phân giải ảnh nguồn
+  cw = Math.round(w * sc); ch = Math.round(h * sc); cv.width = cw; cv.height = ch; dirty = true; schedule();
+}
+function nearestReady(i) { if (isReady(i)) return i; for (let o = 1; o < N / 2; o++) { if (isReady(wrap(i - o))) return wrap(i - o); if (isReady(wrap(i + o))) return wrap(i + o); } return -1; }
+function drawImg(img) {
+  const iw = img.naturalWidth, ih = img.naturalHeight, k = Math.max(cw / iw, ch / ih), sw = cw / k, sh = ch / k;
+  ctx.drawImage(img, (iw - sw) / 2, (ih - sh) / 2, sw, sh, 0, 0, cw, ch);
+}
+function draw() {
+  dirty = false; const cur = nearestReady(Math.round(pos) % N);
+  if (cur < 0) return;
+  ctx.globalAlpha = 1; drawImg(frames[cur].img); // luôn là MỘT khung nguyên vẹn, nét
+}
+function warmAround() { const c = Math.round(pos); for (let o = -10; o <= 10; o++) load(c + o, 'high'); }
+function schedule() { if (!raf) raf = requestAnimationFrame(loop); }
+
+// ---------- chuyển động: kéo, quán tính, cuộn chuột, bàn phím, tự xoay ----------
+let vel = 0, dragging = false, lastX = 0, lastT = 0, lastFrameT = 0;
+const sens = () => N / Math.max(1800, innerWidth * 1.3); // khung / px
+const hint = document.getElementById('hint');
+const touched = () => hint.classList.add('gone');
+function loop(t) {
+  raf = 0; const dt = Math.min(0.05, (t - (lastFrameT || t)) / 1000); lastFrameT = t;
+  let moving = false;
+  if (!dragging && Math.abs(vel) > 0.0015) { pos = wrap(pos + vel * dt * 1000); vel *= Math.pow(0.0025, dt); moving = true; dirty = true; if (Math.abs(vel) <= 0.0015) vel = 0; }
+  if (dirty) { draw(); warmAround(); }
+  if (moving || dragging) raf = requestAnimationFrame(loop); else lastFrameT = 0;
+}
+cv.addEventListener('pointerdown', (e) => { try { cv.setPointerCapture(e.pointerId); } catch (_) {} dragging = true; cv.classList.add('drag'); lastX = e.clientX; lastT = performance.now(); vel = 0; touched(); });
+cv.addEventListener('pointermove', (e) => {
+  if (!dragging) return; const now = performance.now(), dx = e.clientX - lastX, d = -DIR * dx * sens();
+  pos = wrap(pos + d); const dtm = Math.max(1, now - lastT); vel = vel * 0.6 + (d / dtm) * 0.4; lastX = e.clientX; lastT = now; dirty = true; schedule();
+});
+const endDrag = () => { if (!dragging) return; dragging = false; cv.classList.remove('drag'); if (performance.now() - lastT > 90) vel = 0; schedule(); };
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+cv.addEventListener('wheel', (e) => { e.preventDefault(); touched(); pos = wrap(pos + (e.deltaX + e.deltaY) * 0.03); dirty = true; schedule(); }, { passive: false });
+addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; touched();
+  pos = wrap(pos + (e.key === 'ArrowRight' ? 1 : -1) * 1); dirty = true; schedule();
+});
+addEventListener('resize', resize);
+document.addEventListener('visibilitychange', () => { lastFrameT = 0; if (!document.hidden) schedule(); });
+resize(); boot();
+</script>
+</body>
+</html>

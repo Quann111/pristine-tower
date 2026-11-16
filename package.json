@@ -1,0 +1,23 @@
+{
+  "name": "pristine-tower",
+  "version": "1.0.0",
+  "description": "Pristine Tower - tour 360 va mat bang",
+  "main": "server.js",
+  "scripts": {
+    "test": "node --test test/api.test.mjs",
+    "start": "node server.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "pannellum": "^2.5.7"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.5",
+    "wrangler": "^4.151.3"
+  }
+}

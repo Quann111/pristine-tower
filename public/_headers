@@ -1,0 +1,44 @@
+# Cache dài cho tệp tĩnh ít đổi; HTML dùng ngay bản đã lưu và tải bản mới ở nền (lần mở sau sẽ thấy bản mới).
+/
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+/matbang
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+/tienich
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+/floor
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+/xoay360
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+/360
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+/phantang
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+/media
+  Cache-Control: public, max-age=0, stale-while-revalidate=604800
+# ảnh khung tách tầng / tiện ích / mặt đứng / media: tên cố định, đổi nội dung thì đổi ?v= hoặc tên tệp
+/split/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+/split/media/media.json
+  ! Cache-Control
+  Cache-Control: public, max-age=300, stale-while-revalidate=86400
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+/menu.css
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+/menu.js
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+/home/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+/home/scenes/*
+  ! Cache-Control
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+/brand/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/uploads/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+/frames/*
+  Cache-Control: public, max-age=31536000, immutable
+/seed/*
+  Cache-Control: no-store

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Media - Pristine Tower</title>
+<link rel="preload" href="/split/media/media.json" as="fetch" crossorigin="anonymous">
+<link rel="modulepreload" href="/menu.js">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#111;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#stage{position:fixed;inset:0;height:100dvh;overflow:hidden;background:radial-gradient(90% 240% at 8% 9%,#2f3233 0%,#24251f 25%,#1c1918 65%)}
+/* băng trượt 3 ô (trước / hiện tại / sau): kéo theo tay, thả thì trượt sang ô kế */
+#track{position:absolute;inset:0;display:flex;width:300%;left:-100%;touch-action:none;cursor:grab;will-change:transform}
+#track.drag{cursor:grabbing}
+#track.anim{transition:transform .42s cubic-bezier(.2,.75,.2,1)}
+.sl{position:relative;flex:0 0 33.3334%;height:100%;overflow:hidden}
+/* nền chờ: thumbnail phóng to + mờ (có ngay), phủ cả phần ngoài ảnh ở chế độ vừa khung */
+.sl .bk{position:absolute;inset:-40px;background:var(--c,#222) center/cover no-repeat;filter:blur(26px) brightness(.62);transform:scale(1.06)}
+.sl .zm{position:absolute;inset:0;transform-origin:0 0}
+.sl img.hi{position:absolute;inset:0;width:100%;height:100%;object-fit:var(--fit,cover);opacity:0;transition:opacity .45s;pointer-events:none}
+.sl img.hi.ok{opacity:1}
+#stage.contain{--fit:contain}
+#stage::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,0) 22%,rgba(0,0,0,0) 70%,rgba(0,0,0,.42));pointer-events:none}
+#logo{position:fixed;left:22px;top:18px;width:128px;height:auto;z-index:13;pointer-events:none;filter:drop-shadow(0 0 4px rgba(0,0,0,.4))}
+#cap{position:absolute;z-index:4;left:50%;top:max(24px,3.6vh);transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:7px 18px;border-radius:30px;background:rgba(43,21,6,.45);box-shadow:0 0 10px rgba(0,0,0,.25);backdrop-filter:blur(4px);color:#EFEEEA;font:500 15px/1.2 "SVN-Spyre","Garamond Premier Pro",Georgia,serif;white-space:nowrap;max-width:calc(100vw - 300px);pointer-events:none}
+#cap b{font:500 18px/1 "SVN-Spyre","Garamond Premier Pro",Georgia,serif;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis}
+#cap span{opacity:.7;font-size:13px}
+.nav{position:absolute;z-index:4;top:50%;width:52px;height:80px;margin-top:-40px;border:1px solid rgba(239,238,234,.45);border-radius:50px;background:rgba(43,21,6,.5);color:#EFEEEA;cursor:pointer;display:grid;place-items:center;box-shadow:0 0 12px rgba(0,0,0,.28);transition:background .2s,transform .2s}
+.nav:hover{background:rgba(153,104,69,.9);transform:scale(1.06)}
+.nav svg{width:22px;height:22px;fill:none;stroke:#EFEEEA;stroke-width:2}
+
+/* dải thumbnail: ẩn, mở bằng nút "Chọn ảnh" */
+#dock{position:absolute;z-index:6;left:50%;bottom:calc(var(--tb,80px) + 58px);width:min(1078px,calc(100vw - 84px));padding:16px 18px;border-radius:26px;background:rgba(43,21,6,.55);box-shadow:0 18px 44px rgba(0,0,0,.25);backdrop-filter:blur(6px);opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,calc(100% + 40px));transition:opacity .4s,transform .5s cubic-bezier(.2,.75,.2,1),visibility .4s}
+#dock.on{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%)}
+#strip{position:relative;display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x;cursor:grab}
+#strip::-webkit-scrollbar{display:none}
+.th{flex:0 0 clamp(130px,9.2vw,170px);aspect-ratio:36/25;padding:0;border:1px solid rgba(239,238,234,.55);border-radius:13px;overflow:hidden;background:#3a302a;cursor:pointer;transition:transform .2s,box-shadow .2s,filter .2s}
+.th img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.th:hover,.th.on{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 0 0 2px #EFEEEA}
+#pick{position:absolute;z-index:6;left:50%;bottom:calc(var(--tb,80px) + 10px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 10px;border:0;background:none;color:#EFEEEA;font:400 14px/17px Inter,system-ui,sans-serif;filter:drop-shadow(0 0 2px #000);cursor:pointer;animation:fl 2.6s 1s ease-in-out infinite}
+#pick i{position:relative;width:26px;height:7px}
+#pick i::before,#pick i::after{content:"";position:absolute;top:3px;width:15px;height:1px;border-radius:9px;background:#EFEEEA}
+#pick i::before{left:0;transform:rotate(-22deg)}#pick i::after{right:0;transform:rotate(22deg)}
+#pick.on i{transform:scaleY(-1)}
+@keyframes fl{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-4px)}}
+#note{position:absolute;z-index:4;right:max(86px,6vw);bottom:calc(var(--tb,80px) + 14px);margin:0;color:rgba(239,238,234,.55);font:500 12px/1.4 Inter,system-ui,sans-serif;text-shadow:0 2px 5px rgba(0,0,0,.5);pointer-events:none}
+/* gợi ý kéo/vuốt: bàn tay đưa qua lại giữa 2 mũi tên, hiện lúc vào trang, tắt khi người xem đã kéo */
+#hint{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 22px 12px;border-radius:22px;background:rgba(20,14,10,.5);backdrop-filter:blur(4px);box-shadow:0 0 18px rgba(0,0,0,.3);color:#EFEEEA;font:400 14px/1.3 Inter,system-ui,sans-serif;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s}
+#hint.on{opacity:1}
+#hint .row{display:flex;align-items:center;gap:6px}
+#hint .ar{width:22px;height:22px;fill:none;stroke:#EFEEEA;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+#hint .ar.l{animation:arL 1.6s ease-in-out infinite}#hint .ar.r{animation:arR 1.6s ease-in-out infinite}
+#hint .hand{width:40px;height:40px;fill:#EFEEEA;animation:hand 1.6s ease-in-out infinite;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+@keyframes hand{0%,100%{transform:translateX(-14px) rotate(-8deg)}50%{transform:translateX(14px) rotate(8deg)}}
+@keyframes arL{0%,100%{opacity:1;transform:translateX(-3px)}50%{opacity:.35;transform:none}}
+@keyframes arR{0%,100%{opacity:.35;transform:none}50%{opacity:1;transform:translateX(3px)}}
+@media(prefers-reduced-motion:reduce){#hint .hand,#hint .ar{animation:none}}
+/* chừa chỗ cột nút toàn màn hình / âm thanh bên phải */
+#dock{width:min(1078px,calc(100vw - 150px))}
+@media(max-width:1024px){#dock{width:min(760px,calc(100vw - 130px));padding:12px 14px;border-radius:22px}.th{flex-basis:140px}}
+@media(max-width:767px){
+  #logo{top:14px;left:16px;width:96px}
+  #cap{top:auto;bottom:calc(var(--tb,70px) + 56px);max-width:calc(100vw - 32px);padding:6px 14px}#cap b{font-size:15px}
+  .nav{display:none}
+  #dock{width:calc(100vw - 24px);padding:10px 12px;border-radius:18px;bottom:calc(var(--tb,70px) + 186px)}
+  .th{flex-basis:108px;border-radius:12px}
+  #note{right:auto;left:50%;transform:translateX(-50%);top:max(16px,env(safe-area-inset-top));bottom:auto;font-size:10px;white-space:nowrap;display:none}
+}
+@media(max-height:500px) and (orientation:landscape){#cap{top:12px;bottom:auto}#note{display:none}#dock{bottom:calc(var(--tb,60px) + 54px);width:calc(100vw - 150px);padding:8px 10px}.th{flex-basis:96px}}
+@media(hover:none){.nav{display:none}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="track"><div class="sl"></div><div class="sl"></div><div class="sl"></div></div>
+  <div id="cap"><b></b><span></span></div>
+  <div id="dock" role="region" aria-label="Danh sách ảnh"><div id="strip"></div></div>
+  <button id="pick" type="button" aria-expanded="false" aria-controls="dock"><i></i><span>Chọn ảnh</span></button>
+  <p id="note">Hình ảnh phối cảnh mang tính chất minh họa</p>
+  <div id="hint" aria-hidden="true"><div class="row"><svg class="ar l" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg><svg class="hand" viewBox="0 0 24 24"><path d="M9 3.5a1.5 1.5 0 0 1 3 0V11l.6-.1a1.5 1.5 0 0 1 1.9 1l.1.1a1.5 1.5 0 0 1 2.4.6 1.5 1.5 0 0 1 2.5 1.1V17a5 5 0 0 1-5 5h-1.6a5 5 0 0 1-3.9-1.9l-3.3-4.2a1.6 1.6 0 0 1 2.3-2.2L9 15.3z"/></svg><svg class="ar r" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></div><span></span></div>
+  <img id="logo" src="/brand/logo.webp" alt="Logo" width="128" height="29" draggable="false">
+  <div id="ui"></div>
+</div>
+<script type="module">
+import { initMenu } from '/menu.js';
+const $ = (id) => document.getElementById(id);
+initMenu($('ui'), 'fly', { tab: 'media', noToggle: true });
+const stage = $('stage'), track = $('track'), slides = [...track.children], strip = $('strip'), dock = $('dock'), pick = $('pick');
+const list = await fetch('/split/media/media.json').then((r) => r.json()).catch(() => []);
+const N = list.length;
+const touch = matchMedia('(hover: none)').matches;
+const src = (it, w) => `/split/media/${it.id}-${w}.webp${it.v ? `?v=${it.v}` : ''}`;
+const srcset = (it) => [960, 1600, 2560].map((w) => `${src(it, w)} ${w}w`).join(', ');
+const mod = (i) => ((i % N) + N) % N;
+let cur = Math.max(0, list.findIndex((x) => x.id === new URLSearchParams(location.search).get('i')));
+
+// ảnh khác tỉ lệ màn hình nhiều (màn dọc, ảnh vuông…) → hiện trọn ảnh, phần thừa là nền mờ; còn lại phủ kín
+const fitMode = () => {
+  const it = list[cur]; if (!it) return;
+  const ra = (it.w / it.h) / (innerWidth / innerHeight);
+  stage.classList.toggle('contain', ra > 1.35 || ra < 0.74 || innerWidth < 768);
+};
+
+// đổ ảnh vào 1 ô: nền thumbnail mờ có ngay, ảnh nét (srcset theo cỡ màn & mật độ điểm ảnh) mờ dần vào khi đã giải mã
+function fill(sl, i, eager) {
+  const it = list[i]; if (!it || sl.dataset.i === String(i)) return;
+  sl.dataset.i = i; resetZoom(sl);
+  sl.innerHTML = `<div class="bk" style="--c:${it.bg};background-image:url(${src(it, 'thumb')})"></div><div class="zm"><img class="hi" alt="${it.title.replace(/"/g, '&quot;')}" draggable="false" decoding="async" sizes="100vw"></div>`;
+  const img = sl.querySelector('img.hi');
+  if (eager) img.fetchPriority = 'high'; else img.loading = 'lazy';
+  img.srcset = srcset(it); img.src = src(it, 1600);
+  const ok = () => img.classList.add('ok');
+  img.decode ? img.decode().then(ok, ok) : (img.onload = ok);
+}
+function render() {
+  fill(slides[1], cur, true); fill(slides[0], mod(cur - 1)); fill(slides[2], mod(cur + 1));
+  const it = list[cur];
+  $('cap').querySelector('b').textContent = it.title; $('cap').querySelector('span').textContent = `${cur + 1} / ${N}`;
+  strip.querySelectorAll('.th').forEach((t, i) => { t.classList.toggle('on', i === cur); if (i === cur) t.setAttribute('aria-current', 'true'); else t.removeAttribute('aria-current'); });
+  if (dock.classList.contains('on')) centerThumb(true);
+  history.replaceState(null, '', `?i=${it.id}`);
+  fitMode();
+}
+
+// ---------- chuyển ảnh: trượt băng 3 ô rồi xoay vòng nội dung ----------
+let busy = false;
+function go(dir) {
+  if (busy || N < 2) return; busy = true;
+  track.classList.add('anim'); track.style.transform = `translateX(${-dir * 33.3334}%)`;
+  setTimeout(() => {
+    cur = mod(cur + dir);
+    if (dir > 0) track.append(slides.shift()), slides.push(track.lastElementChild); else track.prepend(slides.pop()), slides.unshift(track.firstElementChild);
+    track.classList.remove('anim'); track.style.transform = ''; render(); busy = false;
+  }, 430);
+}
+function jump(i) { if (i === cur) return; cur = i; slides.forEach((s) => delete s.dataset.i); render(); }
+
+addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1); else if (e.key === 'Escape') toggleDock(false); });
+
+// ---------- vuốt / kéo (băng đi theo tay), chụm 2 ngón & chạm đúp để phóng to ảnh ----------
+const pts = new Map(); let sw = null, pz = null, lastTap = 0;
+const zm = () => slides[1].querySelector('.zm');
+const Z = new WeakMap(); // trạng thái phóng của từng ô: { s, x, y }
+function resetZoom(sl) { Z.set(sl, { s: 1, x: 0, y: 0 }); const z = sl.querySelector('.zm'); if (z) z.style.transform = ''; }
+function applyZoom() {
+  const z = Z.get(slides[1]) || { s: 1, x: 0, y: 0 }, w = innerWidth, h = innerHeight;
+  z.s = Math.min(4, Math.max(1, z.s)); z.x = Math.min(0, Math.max(w - w * z.s, z.x)); z.y = Math.min(0, Math.max(h - h * z.s, z.y));
+  if (z.s === 1) z.x = z.y = 0;
+  Z.set(slides[1], z); const e = zm(); if (e) e.style.transform = z.s === 1 ? '' : `translate(${z.x}px,${z.y}px) scale(${z.s})`;
+}
+const zoomAt = (px, py, ns) => { const z = Z.get(slides[1]) || { s: 1, x: 0, y: 0 }; const k = ns / z.s; z.x = px - (px - z.x) * k; z.y = py - (py - z.y) * k; z.s = ns; Z.set(slides[1], z); applyZoom(); };
+track.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  track.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pts.size === 2) { const [a, b] = [...pts.values()]; pz = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), s: (Z.get(slides[1]) || { s: 1 }).s }; sw = null; return; }
+  const z = Z.get(slides[1]) || { s: 1 };
+  sw = { x: e.clientX, y: e.clientY, t: performance.now(), axis: null, pan: z.s > 1, zx: z.x, zy: z.y };
+});
+track.addEventListener('pointermove', (e) => {
+  if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pz && pts.size === 2) { const [a, b] = [...pts.values()]; zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, pz.s * Math.hypot(a[0] - b[0], a[1] - b[1]) / pz.d); return; }
+  if (!sw || busy) return;
+  const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+  if (sw.pan) { const z = Z.get(slides[1]); z.x = sw.zx + dx; z.y = sw.zy + dy; applyZoom(); return; }
+  if (!sw.axis) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; sw.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; if (sw.axis === 'x') track.classList.add('drag'); }
+  if (sw.axis === 'x') track.style.transform = `translateX(${dx}px)`;
+});
+const end = (e) => {
+  if (!pts.delete(e.pointerId)) return;
+  if (pz) { if (pts.size < 2) pz = null; applyZoom(); return; }
+  if (!sw) return; const s = sw; sw = null; track.classList.remove('drag');
+  const dx = e.clientX - s.x, dt = performance.now() - s.t;
+  if (s.axis === 'x' && !s.pan) {
+    // vuốt đủ xa hoặc đủ nhanh thì sang ảnh; không thì bật về chỗ cũ
+    if (Math.abs(dx) > Math.max(48, innerWidth * 0.12) || (Math.abs(dx) > 24 && Math.abs(dx) / dt > 0.45)) {
+      track.style.transform = `translateX(${dx}px)`; requestAnimationFrame(() => go(dx < 0 ? 1 : -1));
+    } else { track.classList.add('anim'); track.style.transform = ''; setTimeout(() => track.classList.remove('anim'), 430); }
+    return;
+  }
+  // chạm/nháy đúp: phóng 2.5× tại điểm chạm, lần nữa thì thu về
+  if (!s.axis && Math.abs(dx) < 8 && dt < 300) {
+    const now = performance.now();
+    if (now - lastTap < 320) { const z = Z.get(slides[1]) || { s: 1 }; if (z.s > 1) { resetZoom(slides[1]); } else zoomAt(e.clientX, e.clientY, 2.5); lastTap = 0; }
+    else lastTap = now;
+  }
+};
+track.addEventListener('pointerup', end); track.addEventListener('pointercancel', end);
+// lăn chuột (máy tính): phóng to / thu nhỏ quanh con trỏ
+track.addEventListener('wheel', (e) => { e.preventDefault(); const z = Z.get(slides[1]) || { s: 1 }; zoomAt(e.clientX, e.clientY, z.s * (e.deltaY < 0 ? 1.15 : 1 / 1.15)); }, { passive: false });
+
+// ---------- dải thumbnail (lazy) ----------
+strip.innerHTML = list.map((it, i) => `<button class="th" type="button" aria-label="Xem ảnh ${it.title.replace(/"/g, '&quot;')}"><img src="${src(it, 'thumb')}" alt="" loading="lazy" decoding="async" draggable="false" width="360" height="250"></button>`).join('');
+strip.addEventListener('click', (e) => { const b = e.target.closest('.th'); if (b && !stripDrag) jump([...strip.children].indexOf(b)); });
+let stripDrag = false;
+strip.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') return; const x0 = e.clientX, s0 = strip.scrollLeft; stripDrag = false;
+  const mv = (m) => { if (Math.abs(m.clientX - x0) > 5) stripDrag = true; strip.scrollLeft = s0 - (m.clientX - x0); };
+  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); setTimeout(() => (stripDrag = false), 0); };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); });
+strip.addEventListener('wheel', (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); strip.scrollLeft += e.deltaY; } }, { passive: false });
+function toggleDock(v = !dock.classList.contains('on')) {
+  dock.classList.toggle('on', v); pick.classList.toggle('on', v); pick.setAttribute('aria-expanded', v);
+  pick.querySelector('span').textContent = v ? 'Đóng' : 'Chọn ảnh';
+  if (v) { strip.querySelectorAll('img[loading=lazy]').forEach((im) => (im.loading = 'eager')); centerThumb(false); } // 23 thumb ≈ 360KB: tải hết khi mở để không thấy ô trống lúc cuộn
+}
+// chỉ cuộn dải thumbnail (scrollIntoView sẽ cuộn cả khung trang sang ngang làm lệch toàn bộ giao diện)
+function centerThumb(smooth) {
+  const th = strip.children[cur]; if (!th) return;
+  // đợi khung vẽ kế: cuộn mượt bắt đầu cùng lúc đổi ảnh hay bị trình duyệt ngắt giữa chừng
+  requestAnimationFrame(() => strip.scrollTo({ left: th.offsetLeft - (strip.clientWidth - th.offsetWidth) / 2, behavior: smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'auto' }));
+}
+pick.onclick = () => toggleDock();
+
+// ---------- bố cục theo thanh menu dưới + gợi ý thao tác lần đầu ----------
+function layout() {
+  const tb = document.querySelector('#tabs'); if (tb) stage.style.setProperty('--tb', (innerHeight - tb.getBoundingClientRect().top) + 'px');
+  fitMode(); applyZoom();
+}
+addEventListener('resize', layout);
+// khung trang không bao giờ được cuộn (focus/bàn phím có thể kéo lệch overflow:hidden)
+for (const el of [stage, document.scrollingElement]) el.addEventListener('scroll', () => { if (el.scrollLeft || el.scrollTop) el.scrollTo(0, 0); });
+addEventListener('scroll', () => { if (scrollX || scrollY) scrollTo(0, 0); });
+// menu.css nạp sau: đo lại vị trí thanh tab khi CSS/phông đã xong
+addEventListener('load', layout); document.fonts.ready.then(layout);
+const mcss = document.querySelector('link[href="/menu.css"]'); if (mcss) mcss.addEventListener('load', layout);
+if (!N) { $('cap').querySelector('b').textContent = 'Chưa có ảnh'; }
+else { render(); layout(); }
+// gợi ý kéo/vuốt: hiện mỗi lần vào trang ~5s, tắt ngay khi người xem đã tự chuyển ảnh
+const hint = $('hint');
+hint.querySelector('span').textContent = touch ? 'Vuốt trái / phải để xem ảnh' : 'Kéo trái / phải để xem ảnh';
+const hideHint = () => hint.classList.remove('on');
+if (N > 1) { setTimeout(() => hint.classList.add('on'), 500); setTimeout(hideHint, 5500); }
+track.addEventListener('pointerdown', hideHint); addEventListener('keydown', hideHint);
+// lúc rảnh: tải trước ảnh 2 bên (đã có trong ô trước/sau, lazy) và thumbnail
+// (bỏ qua khi bật tiết kiệm dữ liệu / mạng 2G-3G: ảnh bên cạnh vẫn tự tải khi người xem vuốt tới)
+const conn = navigator.connection || {};
+if (!conn.saveData && !/(^|-)2g|3g/.test(conn.effectiveType || '')) (window.requestIdleCallback || setTimeout)(() => slides.forEach((s) => { const im = s.querySelector('img.hi'); if (im) im.loading = 'eager'; }));
+</script>
+</body>
+</html>
