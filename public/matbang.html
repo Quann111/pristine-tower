@@ -273,12 +273,9 @@ const seqLen = () => (TRANS_ON ? TN : 0) + N;
 const have = (k) => (TRANS_ON && k < TN ? tframes[k] : frames[k - (TRANS_ON ? TN : 0)]);
 function canGo(p, fps) {
   const L = seqLen(); let c = p; while (c < L && have(c)) c++;
-  if (c >= L) return true;
-  // lần đầu vào trang (chưa có cache): đệm tối thiểu 1/4 phần còn lại và đo tốc độ tải ít nhất 1 giây mới tin
-  const el = (performance.now() - loadT0) / 1000;
-  if (c - p < Math.max(10, (L - p) / 4) || el < 1) return false;
-  const rate = nLoaded / el; // khung/giây
-  return ((L - c) / rate) * 1.5 <= (L - p) / fps; // dư 50% cho mạng chập chờn
+  // chỉ chạy khi đã tải + giải mã đủ cả chuỗi (chuyển cảnh + tách tầng): thanh tải hiện tiến độ, chạy một mạch không khựng.
+  // Trang Phân tầng đã tải ngầm sẵn các khung này vào bộ nhớ đệm nên thường xong gần như ngay.
+  return c >= L;
 }
 function whenReady(p, fps, cb) {
   let done = false; // thử lại khi có khung tải xong, và mỗi 250ms (điều kiện đo đủ 1 giây cần đồng hồ)

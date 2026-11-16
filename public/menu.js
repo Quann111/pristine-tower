@@ -33,7 +33,6 @@ function prefetchPages() {
   const run = () => idle(() => {
     const cur = here();
     const urls = ['/', '/phantang', '/media', '/matbang', '/xoay360', '/tienich'].filter((u) => u !== cur);
-    if (cur === '/phantang') urls.push(`/split/${innerWidth * Math.min(devicePixelRatio || 1, 2) <= 1000 ? 960 : 1280}/f_00.webp?v=4`); // khung đầu video tách tầng
     for (const u of urls) {
       if (document.querySelector(`link[rel=prefetch][href="${u}"]`)) continue;
       const l = document.createElement('link'); l.rel = 'prefetch'; l.href = u; document.head.appendChild(l);

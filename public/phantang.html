@@ -71,19 +71,36 @@ img.decode().catch(() => {}).then(() => art.classList.add('on'));
 
 // tầng tiện ích: chạy video chuyển cảnh (khung t_*) rồi nối luôn khung tách tầng ở /matbang?from=pt
 // cỡ khung chọn như đoạn đầu trang matbang (ảnh chuyển cảnh tối đa 1920)
-const transW = (() => {
+
+// cỡ khung tách tầng ở /matbang — giữ đồng bộ với đoạn đầu trang matbang.html
+const splitW = (() => {
   const c = navigator.connection || {}, slow = c.saveData || /(^|-)2g|3g/.test(c.effectiveType || '');
-  const need = Math.max(innerWidth, innerHeight) * Math.min(devicePixelRatio || 1, 2);
-  let i = need <= 1050 ? 0 : need <= 1450 ? 1 : 2;
-  if (Math.min(innerWidth, innerHeight) < 600) i = Math.min(i, 1);
+  const dpr = Math.min(devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight, AR = 3540 / 1536, short = Math.min(W, H);
+  const zoom = short < 600 ? (W > H ? 1.286 : 2.144) : (W < 1200 && H > W * 0.8 ? 1.829 : 1.286);
+  const need = Math.min(W / AR, H) * zoom * AR * dpr;
+  let i = need <= 1050 ? 0 : need <= 1450 ? 1 : need <= 2100 ? 2 : 3;
+  if (short < 600) i = Math.min(i, 1);
   if (slow) i = Math.max(0, i - 1);
-  return [960, 1280, 1920][i];
+  return [960, 1280, 1920, 2560][i];
 })();
-let warmed = false;
-const warm = () => { // rê / chạm vào tầng tiện ích: tải trước cả video chuyển cảnh (10 khung đầu ưu tiên)
-  if (warmed) return; warmed = true;
-  for (let i = 0; i < 48; i++) { const im = new Image(); im.fetchPriority = i < 10 ? "high" : "low"; im.src = `/split/trans/${transW}/t_${String(i).padStart(2, '0')}.webp?v=1`; }
+const transW = Math.min(splitW, 1920); // = window.TRANS_W ở matbang
+// tải trước toàn bộ khung chuyển cảnh + tách tầng vào bộ nhớ đệm trình duyệt (cache 30 ngày) để sang /matbang chạy ngay.
+// Chạy ngầm, ít luồng (điện thoại 2, máy khác 3), ưu tiên thấp, chỉ khi trình duyệt rảnh; rê/chạm tầng tiện ích thì tăng tốc.
+// Mạng chậm / tiết kiệm dữ liệu: không tự tải ngầm, chỉ tải khi người xem rê/chạm vào tầng tiện ích.
+const SLOW = (() => { const c = navigator.connection || {}; return c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ''); })();
+const queue = [...Array.from({ length: 48 }, (_, i) => `/split/trans/${transW}/t_${String(i).padStart(2, '0')}.webp?v=1`),
+  ...Array.from({ length: 50 }, (_, i) => `/split/${splitW}/f_${String(i).padStart(2, '0')}.webp?v=6`)];
+let qi = 0, qa = 0, qPar = 0;
+const pump = () => {
+  while (qa < qPar && qi < queue.length) {
+    const u = queue[qi++]; qa++;
+    const im = new Image(); im.fetchPriority = 'low'; im.decoding = 'async';
+    im.onload = im.onerror = () => { qa--; pump(); }; im.src = u;
+  }
 };
+const prefetch = (par) => { if (par > qPar) { qPar = par; pump(); } };
+let warmed = false;
+const warm = () => { if (warmed) return; warmed = true; prefetch(Math.min(innerWidth, innerHeight) < 600 ? 4 : 6); };
 const go = (h) => {
   if (h.target === 'amenity') {
     // lưu vị trí ảnh đang thấy để khung đầu video khớp đúng chỗ
@@ -160,7 +177,11 @@ function layout() {
   artT = { left, tp, s };
 }
 // rảnh thì tải trước khung đầu video chuyển cảnh (nhẹ, ~50–100KB)
-(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { const im = new Image(); im.src = `/split/trans/${transW}/t_00.webp?v=1`; });
+const startPrefetch = () => setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(() => {
+  if (SLOW) { const im = new Image(); im.src = queue[0]; return; } // mạng chậm: chỉ khung đầu
+  prefetch(Math.min(innerWidth, innerHeight) < 600 ? 2 : 3);
+}, { timeout: 3000 }), 1200);
+if (document.readyState === 'complete') startPrefetch(); else addEventListener('load', startPrefetch);
 addEventListener('resize', layout); layout();
 document.fonts.ready.then(layout); // tiêu đề đổi cao khi phông tải xong
 // menu.css nạp sau: đo lại vị trí thanh tab khi CSS đã xong
