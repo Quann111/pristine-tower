@@ -471,8 +471,14 @@ function loadEndHQ() {
   if (endHQ || preview) return; endHQ = true;
   // mạng chậm / tiết kiệm dữ liệu: vẫn tải, cỡ khung đã hạ 1 bậc nên end.webp (cao hơn 1 bậc) vừa đúng độ nét màn hình; đợi lúc rảnh mới tải
   const go = () => { const img = new Image(); img.decoding = 'async'; img.fetchPriority = 'low';
-  img.src = `/split/${W}/end.webp?v=6`;
-  img.decode().then(() => { warmImg(img); frames[N - 1] = img; if (cur === N - 1 && tIdx < 0) draw(cur); }, () => {}); };
+  img.src = `/split/${W}/end.webp?v=7`;
+  img.decode().then(() => { warmImg(img); const prev = frames[N - 1]; frames[N - 1] = img;
+    if (cur !== N - 1 || tIdx >= 0 || !prev) return draw(cur);
+    // mờ dần từ khung video sang ảnh nét trong 0,5 s → không bị "giật" khi đổi chất lượng
+    const g = geom(), t0 = performance.now(), step = (t) => { const a = Math.min(1, (t - t0) / 500);
+      if (cur !== N - 1 || tIdx >= 0) return; paint(prev, g.dx, g.dy, g.dw, g.dh, IMG_AR);
+      ctx.globalAlpha = a; ctx.drawImage(img, g.dx * dpr, g.dy * dpr, g.dw * dpr, g.dh * dpr); ctx.globalAlpha = 1; if (a < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step); }, () => {}); };
   window.SPLIT_SLOW ? (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(go, { timeout: 4000 }) : go();
 }
 // ---------- vòng lặp sau khi tách tầng xong (video PhanTangTI_2nd): l_00 trùng khung cuối f_49, l_49 ≈ l_00 →
