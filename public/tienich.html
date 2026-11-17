@@ -218,9 +218,14 @@ function roofAnim(h) {
   // cỡ thật lúc hiện xong (không đo lúc popup còn đang thu nhỏ để chạy hiệu ứng): khung layout × hệ số --k (máy tính) / 1 (điện thoại)
   const k = lb.classList.contains("mob") ? 1 : +getComputedStyle(lb).getPropertyValue("--k") || 1;
   const need = Math.min(ph.offsetWidth, ph.offsetHeight) * k * Math.min(devicePixelRatio || 1, 2);
-  const w = slow || need <= 720 ? 720 : need <= 1080 ? 1080 : 1600, src = `/split/amenity/bocmai-anim-${w}.webp?v=1`;
+  const w = slow || need <= 720 ? 720 : need <= 1080 ? 1080 : 1600, src = `/split/amenity/bocmai-anim-${w}.webp?v=2`;
   const a = new Image(); a.decoding = 'async'; a.src = src;
-  a.decode().then(() => { if (lb.classList.contains('on') && lbImg.alt === h.title) { lbImg.src = src; lbImg.classList.add('ok'); } }, () => {});
+  // chạy 1 lần (2,04 s) rồi thay bằng khung cuối chất lượng cao (tải sẵn trong lúc chạy)
+  const ew = slow ? 1600 : 2500, end = new Image(); end.decoding = 'async'; end.src = `/split/amenity/bocmai-end-${ew}.webp?v=1`;
+  const live = () => lb.classList.contains('on') && lbImg.alt === h.title;
+  a.decode().then(() => { if (!live()) return; lbImg.src = src; lbImg.classList.add('ok'); const t0 = performance.now();
+    end.decode().then(() => setTimeout(() => { if (live() && /bocmai-anim/.test(lbImg.src)) lbImg.src = end.src; }, Math.max(0, 2100 - (performance.now() - t0))), () => {});
+  }, () => {});
 }
 // phóng to ảnh trong popup: cuộn chuột / chụm 2 ngón / bấm đúp; kéo để di chuyển khi đã phóng
 const ph = lb.querySelector('.ph');
@@ -228,11 +233,10 @@ let zs = 1, zx = 0, zy = 0;
 const zApply = () => { lbImg.style.transform = `translate(${zx}px,${zy}px) scale(${zs})`; ph.classList.toggle("zm", zs > 1.01); if (zs > 1.6) roofHi(); };
 // đang phóng to ảnh bóc mái động → nâng lên bản 1600px (nét hơn) ở nền, vẫn lặp liên tục, không đổi vị trí phóng
 let roofHiOn = false;
-function roofHi() {
-  if (roofHiOn || RM || !/bocmai-anim-(720|1080)/.test(lbImg.src)) return; roofHiOn = true;
-  const c = navigator.connection || {}; if (c.saveData || /(^|-)2g/.test(c.effectiveType || "")) return;
-  const src = "/split/amenity/bocmai-anim-1600.webp?v=1", a = new Image(); a.decoding = "async"; a.src = src;
-  a.decode().then(() => { if (lb.classList.contains("on") && /bocmai-anim/.test(lbImg.src)) lbImg.src = src; }, () => {});
+function roofHi() { // đang phóng to khung cuối bản 1600 → nâng lên 2500
+  if (roofHiOn || !/bocmai-end-1600/.test(lbImg.src)) return; roofHiOn = true;
+  const src = "/split/amenity/bocmai-end-2500.webp?v=1", a = new Image(); a.decoding = "async"; a.src = src;
+  a.decode().then(() => { if (lb.classList.contains("on") && /bocmai-end/.test(lbImg.src)) lbImg.src = src; }, () => {});
 }
 function zClamp() { const w = ph.clientWidth, h = ph.clientHeight; zx = Math.min(0, Math.max(w - w * zs, zx)); zy = Math.min(0, Math.max(h - h * zs, zy)); }
 function zReset() { zs = 1; zx = zy = 0; zApply(); }

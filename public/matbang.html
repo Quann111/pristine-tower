@@ -483,7 +483,7 @@ const LN = 50, LFPS = 25, LW = window.SPLIT_SLOW ? 960 : Math.min(W, 1920);
 const lurl = (i) => `/split/loop/${LW}/l_${String(i).padStart(2, '0')}.webp?v=1`;
 const lframes = new Array(LN).fill(null);
 let lIdx = -1, lStarted = false, lRaf = 0, lHold = false;
-const LOOP_OK = !preview; // không chặn theo chế độ tiết kiệm / giảm chuyển động: Windows, máy tiết kiệm pin hay bật sẵn khiến vòng lặp không bao giờ chạy
+const LOOP_OK = false; // không lặp: chạy hết rồi giữ khung cuối end.webp (chất lượng cao)
 function loadLoop() {
   if (lStarted || !LOOP_OK) return; lStarted = true;
   let nx = 0, act = 0, got = 0; const par = Math.min(innerWidth, innerHeight) < 600 ? 2 : 3;
