@@ -170,9 +170,9 @@ test('mặt bằng: toạ độ theo khung cũ được đổi sang video V2 (kh
 
 test('tầng tiện ích: sơ đồ và vùng tiện ích', async () => {
   const ap = (await call('/api/tour')).json.split.amenityPlan;
-  assert.equal(ap.plan, '/split/amenity/plan-3200.webp'); assert.equal(ap.items.length, 6);
+  assert.equal(ap.plan, '/split/amenity/plan4-3200.webp'); assert.equal(ap.items.length, 5);
   const r = await call('/api/admin/split/amenity-plan', 'PUT', { plan: 'https://evil/x.png', items: [{ id: 'gym', title: 'Gym', x: 0.9, y: -1, w: 0.5, h: 0.2, photo: '/split/amenity/gym-2048.webp' }] });
-  assert.equal(r.status, 200); assert.equal(r.json.plan, '/split/amenity/plan-3200.webp');
+  assert.equal(r.status, 200); assert.equal(r.json.plan, '/split/amenity/plan4-3200.webp');
   assert.deepEqual(r.json.items[0], { id: 'gym', title: 'Gym', x: 0.9, y: 0, w: 0.1, h: 0.2, photo: '/split/amenity/gym-2048.webp' });
   assert.equal((await call('/api/admin/split/amenity-plan', 'PUT', { items: [{ x: 'a' }] })).status, 400);
 });
