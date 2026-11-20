@@ -62,7 +62,7 @@ initMenu(document.getElementById('ui'), 'fly'); // ảnh 360 mở từ hotspot F
   const maxTex = (() => { try { const g = document.createElement('canvas').getContext('webgl'); return g ? g.getParameter(g.MAX_TEXTURE_SIZE) : 0; } catch (e) { return 0; } })();
   const big = maxTex >= 8192 && !slow && !matchMedia('(max-width:1024px), (pointer:coarse)').matches;
   // luôn mở bằng 4K (hiện nhanh), sau đó nâng lên 8K ở nền nếu máy đủ mạnh — kể cả mạng chậm / tiết kiệm dữ liệu (đợi lúc rảnh)
-  const hq = (u, r) => { const k = HQ[String(u).split('?')[0]]; return k ? `/home/scenes/${k}-${r}.webp?v=4` : null; };
+  const hq = (u, r) => { const k = HQ[String(u).split('?')[0]]; return k ? `/home/scenes/${k}-${r}.webp?v=5` : null; };
   // mạng chậm / tiết kiệm dữ liệu: mở bằng 2K (~200 KB, hiện nhanh), lúc rảnh mới nâng lên 4K
   const pick = (u) => hq(u, slow ? '2k' : '4k') || u;
   const scenes = {};
