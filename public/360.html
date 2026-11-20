@@ -6,7 +6,7 @@
 <title>Pristine Tower - View 360</title>
 <link rel="stylesheet" href="/vendor/pannellum.css">
 <link rel="preload" href="/fonts/DFVN-Gatsby-Gilmour.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/api/tour" as="fetch" crossorigin="anonymous">
+<script>/* tải dữ liệu ngay từ đầu, trang dùng lại đúng kết quả này (API no-store: preload sẽ bị tải 2 lần) */(window.__tour = fetch('/api/tour').then((r) => r.json())).catch(() => {});</script>
 <link rel="modulepreload" href="/menu.js">
 <style>
 :root{--gold:#f3e6c8;--pill:rgba(70,56,48,.82)}
@@ -49,27 +49,27 @@ html,body{margin:0;height:100%;background:#111;overflow:hidden;font-family:"DFVN
 <script src="/vendor/pannellum.js" defer></script>
 <script type="module">
 import { initMenu, applyHotspotSize } from '/menu.js';
+import { panoramaView, bindPanoramaView } from '/panorama-view.js';
 initMenu(document.getElementById('ui'), 'fly'); // ảnh 360 mở từ hotspot Flycam → công tắc ở Flycam
 (async () => {
-  const tour = await (await fetch('/api/tour')).json();
+  const tour = await (window.__tour || fetch('/api/tour').then((r) => r.json()));
   applyHotspotSize(tour.hotspotSize);
   const loading = document.getElementById('loading');
   if (!tour.scenes.length) { loading.textContent = 'Chưa có ảnh 360. Vào /admin để thêm.'; return; }
-  const isMobile = matchMedia('(max-width:768px), (orientation:portrait)').matches;
   // ảnh 360 chất lượng cao (từ ảnh gốc 9000px): 8K cho máy tính GPU đủ mạnh, 4K cho điện thoại / mạng yếu
   const HQ = { '/uploads/a41440c63mvkog9vm.jpg': 'cam07', '/uploads/a086304e0mvkohcp5.jpg': 'cam01', '/uploads/aea12b56amvkoi73w.jpg': 'cam03', '/uploads/abf3d2538mvkojcaf.jpg': 'cam06' };
   const conn = navigator.connection || {}, slow = conn.saveData || /(^|-)2g|3g/.test(conn.effectiveType || '');
   const maxTex = (() => { try { const g = document.createElement('canvas').getContext('webgl'); return g ? g.getParameter(g.MAX_TEXTURE_SIZE) : 0; } catch (e) { return 0; } })();
   const big = maxTex >= 8192 && !slow && !matchMedia('(max-width:1024px), (pointer:coarse)').matches;
   // luôn mở bằng 4K (hiện nhanh), sau đó nâng lên 8K ở nền nếu máy đủ mạnh — kể cả mạng chậm / tiết kiệm dữ liệu (đợi lúc rảnh)
-  const hq = (u, r) => { const k = HQ[String(u).split('?')[0]]; return k ? `/home/scenes/${k}-${r}.webp?v=3` : null; };
+  const hq = (u, r) => { const k = HQ[String(u).split('?')[0]]; return k ? `/home/scenes/${k}-${r}.webp?v=4` : null; };
   // mạng chậm / tiết kiệm dữ liệu: mở bằng 2K (~200 KB, hiện nhanh), lúc rảnh mới nâng lên 4K
   const pick = (u) => hq(u, slow ? '2k' : '4k') || u;
   const scenes = {};
   for (const s of tour.scenes) {
     scenes[s.id] = {
       title: s.name, type: 'equirectangular', panorama: pick(s.image), preview: s.thumb, autoLoad: true,
-      ...((isMobile && s.viewMobile) || s.view || {}),
+      ...panoramaView(s, innerWidth, innerHeight),
       hotSpots: s.hotspots.map((h) => ({ id: h.id, pitch: h.pitch, yaw: h.yaw, type: 'scene', text: h.text, sceneId: h.target, cssClass: 'hs' }))
     };
   }
@@ -78,6 +78,7 @@ initMenu(document.getElementById('ui'), 'fly'); // ảnh 360 mở từ hotspot F
     default: { firstScene: (tour.scenes.find((s) => s.id === new URLSearchParams(location.search).get("scene")) ? new URLSearchParams(location.search).get("scene") : tour.firstSceneId), sceneFadeDuration: 800, showControls: false, hfov: 100 },
     scenes
   });
+  bindPanoramaView(viewer, document.getElementById('pano'), Object.fromEntries(tour.scenes.map(s => [s.id, s])));
   const menu = document.getElementById('menu');
   menu.innerHTML = tour.scenes.map((s) => `<button type="button" data-id="${s.id}">${s.name}</button>`).join('');
   // nạp sẵn ảnh các cảnh mà hotspot đang trỏ tới (lúc rảnh) để chuyển cảnh gần như tức thì

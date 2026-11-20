@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Phân tầng - Pristine Tower</title>
-<link rel="preload" href="/api/tour" as="fetch" crossorigin="anonymous">
+<script>/* tải dữ liệu ngay từ đầu, trang dùng lại đúng kết quả này (API no-store: preload sẽ bị tải 2 lần) */(window.__tour = fetch('/api/tour').then((r) => r.json())).catch(() => {});</script>
 <script>
 // tải ảnh mặt đứng song song với /api/tour (khớp cách chọn cỡ bên dưới)
 document.write(`<link rel="preload" as="image" fetchpriority="high" href="/split/matdung/matdung-${Math.max(innerWidth, innerHeight) * Math.min(devicePixelRatio || 1, 2) <= 2000 ? 1920 : 3200}.webp">`);
@@ -59,7 +59,7 @@ const $ = (id) => document.getElementById(id);
 const IW = 2000, IH = 1125; // tỉ lệ ảnh mặt đứng
 initMenu($('ui'), 'fly', { tab: 'matbang', noToggle: true });
 
-const tour = await fetch('/api/tour').then((r) => r.json()).catch(() => ({}));
+const tour = await (window.__tour || fetch('/api/tour').then((r) => r.json())).catch(() => ({}));
 const elev = tour.elev || { items: [] };
 $('ttl').textContent = (tour.floors && tour.floors.title) || 'Phân tầng chức năng';
 const art = $('art'), ov = $('ov'), img = $('bgimg');

@@ -25,10 +25,10 @@
   window.TRANS_W = Math.min(window.SPLIT_W, 1920);
   document.write(window.SPLIT_TRANS
     ? `<link rel="preload" as="image" fetchpriority="high" href="/split/trans/${window.TRANS_W}/t_00.webp?v=1">`
-    : `<link rel="preload" as="image" fetchpriority="high" href="/split/${window.SPLIT_W}/f_${window.SPLIT_END ? 49 : '00'}.webp?v=6">`);
+    : `<link rel="preload" as="image" fetchpriority="high" href="/split/${window.SPLIT_W}/f_${window.SPLIT_END ? 49 : '00'}.webp?v=9">`);
 })();
 </script>
-<link rel="preload" href="/api/tour" as="fetch" crossorigin="anonymous">
+<script>/* tải dữ liệu ngay từ đầu, trang dùng lại đúng kết quả này (API no-store: preload sẽ bị tải 2 lần) */(window.__tour = fetch('/api/tour').then((r) => r.json())).catch(() => {});</script>
 <link rel="preload" href="/fonts/SVN-Spyrel-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/DFVN-Gatsby-Gilmour.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -142,6 +142,8 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;user-select:none;
 #lb{position:fixed;inset:0;z-index:30;background:transparent;display:none;opacity:0;transition:opacity .3s;cursor:default}
 #lb.on{display:block}
 #lb.show{opacity:1}
+/* popup mở: làm mờ toàn bộ trang phía sau (mờ dần cùng popup), đóng popup thì hết mờ */
+#lb.on{background:rgba(12,8,6,.3);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 #lb .pn{position:absolute;left:50%;top:calc(50% - 28px * var(--k));width:1600px;height:900px;transform:translate(-50%,-50%) scale(calc(var(--k) * .96));transition:transform .35s cubic-bezier(.2,.8,.2,1);
   background:rgba(0,0,0,.75);box-shadow:0 0 20px rgba(0,0,0,.5);border-radius:20px}
 #lb.show .pn{transform:translate(-50%,-50%) scale(var(--k))}
@@ -161,6 +163,21 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;user-select:none;
 #lb.mob .x::before,#lb.mob .x::after{width:20px;height:3px;margin:-1.5px 0 0 -10px}
 /* bộ ảnh nhiều tab (Sảnh chính / Sảnh thang): thanh tab viên thuốc, ảnh giữ tỉ lệ, nút ‹ ›, kéo/vuốt */
 #lb .tb,#lb .nv,#lb .sw{display:none}
+/* nút XEM ẢNH 360 (chỉ tab có ảnh 360, vd Sảnh chính): góc dưới phải bảng xem ảnh */
+#lb .v360{position:absolute;z-index:4;right:20px;bottom:18px;height:52px;padding:0 34px;border:5px solid #8E8A84;border-radius:16px;background:linear-gradient(90deg,#F1EEE9,#ECE6D6);color:#4A382A;font:500 17px/42px "SVN-Spyre",Georgia,serif;text-transform:uppercase;white-space:nowrap;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);transition:transform .2s,filter .2s}
+#lb .v360:hover{transform:translateY(-2px);filter:brightness(1.05)}
+#lb .v360[hidden]{display:none}
+#lb.has360:not(.mob) .ph{height:716px}
+#lb.mob .v360{position:static;align-self:center;margin-top:18px;height:44px;line-height:34px;padding:0 22px;font-size:14px;border-width:4px}
+/* trình xem ảnh 360 sảnh (toàn màn hình, trên bảng xem ảnh) */
+#room{position:fixed;inset:0;z-index:40;background:#1d1510;display:none}
+#room.on{display:block;animation:rfin .35s}
+@keyframes rfin{from{opacity:0}to{opacity:1}}
+#rpano{position:absolute;inset:0}
+#room .rback{position:absolute;right:max(16px,2.2vw);top:max(16px,4.1vh);z-index:3;height:40px;padding:0 34px;border:0;border-radius:15px;background:#EFEEEA;color:#4A382A;font:500 17px/40px "SVN-Spyre",Georgia,serif;text-transform:uppercase;cursor:pointer;box-shadow:0 0 10px rgba(0,0,0,.25)}
+#room .rback:hover{background:#fff}
+#room .rld{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#EFEEEA;font:400 14px Inter,system-ui,sans-serif;pointer-events:none}
+@media(max-width:700px){#room .rback{height:34px;line-height:34px;padding:0 18px;font-size:14px;top:12px;right:14px}}
 #lb.gal h2{display:none}
 #lb.gal .tb{display:flex;position:absolute;left:50%;top:18px;transform:translateX(-50%);gap:4px;padding:5px;border:1.5px solid rgba(239,238,234,.55);border-radius:32px;background:rgba(40,32,26,.55)}
 #lb .tb button{border:0;border-radius:26px;padding:12px 38px;background:transparent;color:#EFEEEA;font:400 24px/24px "DFVN Gatsby Gilmour",Georgia,serif;text-transform:uppercase;cursor:pointer;transition:background .25s,color .25s;white-space:nowrap}
@@ -183,8 +200,10 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;user-select:none;
 @keyframes arL{0%,100%{opacity:1;transform:translateX(-3px)}50%{opacity:.35;transform:none}}
 @keyframes arR{0%,100%{opacity:.35;transform:none}50%{opacity:1;transform:translateX(3px)}}
 @media(prefers-reduced-motion:reduce){#lb .sw .hand,#lb .sw .ar{animation:none}}
-#lb.mob.gal .tb{position:static;transform:none;align-self:center;margin:0 48px 16px;max-width:calc(100% - 96px)}
-#lb.mob .tb button{font-size:16px;line-height:16px;padding:9px 16px}
+#lb.mob.gal .tb{position:static;transform:none;align-self:center;margin:max(56px,calc(env(safe-area-inset-top) + 56px)) 0 16px;max-width:100%}
+#lb.mob .tb button{font-size:clamp(13px,4.2vw,16px);line-height:1;padding:9px clamp(10px,4vw,16px)}
+/* điện thoại: nền bảng gần như đặc để không lộ trang phía sau */
+#lb.mob .pn{background:rgba(20,14,10,.55)}
 #lb.mob.gal .ph{top:auto;aspect-ratio:auto;height:min(70vh,calc(100vw * 1.2))}
 #lb.mob.gal .nv{width:40px;height:64px;margin-top:-32px}
 #lb.mob .nv.p{left:4px}#lb.mob .nv.n{right:4px}
@@ -203,10 +222,11 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;user-select:none;
   <div id="ui"></div>
 </div>
 <a id="back" href="/phantang">Quay lại</a>
-<div id="lb" role="dialog" aria-modal="true"><div class="pn"><h2></h2><div class="tb" role="tablist"></div><div class="ph"><img alt="" draggable="false"></div><button class="nv p" type="button" aria-label="Ảnh trước"><svg viewBox="0 0 40 100"><path d="M30 8 10 50l20 42"/></svg></button><button class="nv n" type="button" aria-label="Ảnh sau"><svg viewBox="0 0 40 100"><path d="m10 8 20 42-20 42"/></svg></button><div class="sw" aria-hidden="true"><div class="row"><svg class="ar l" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg><svg class="hand" viewBox="0 0 24 24"><path d="M9 3.5a1.5 1.5 0 0 1 3 0V11l.6-.1a1.5 1.5 0 0 1 1.9 1l.1.1a1.5 1.5 0 0 1 2.4.6 1.5 1.5 0 0 1 2.5 1.1V17a5 5 0 0 1-5 5h-1.6a5 5 0 0 1-3.9-1.9l-3.3-4.2a1.6 1.6 0 0 1 2.3-2.2L9 15.3z"/></svg><svg class="ar r" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></div><span></span></div><button class="x" type="button" aria-label="Đóng"></button></div></div>
+<div id="lb" role="dialog" aria-modal="true"><div class="pn"><h2></h2><div class="tb" role="tablist"></div><div class="ph"><img alt="" draggable="false"></div><button class="nv p" type="button" aria-label="Ảnh trước"><svg viewBox="0 0 40 100"><path d="M30 8 10 50l20 42"/></svg></button><button class="nv n" type="button" aria-label="Ảnh sau"><svg viewBox="0 0 40 100"><path d="m10 8 20 42-20 42"/></svg></button><div class="sw" aria-hidden="true"><div class="row"><svg class="ar l" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg><svg class="hand" viewBox="0 0 24 24"><path d="M9 3.5a1.5 1.5 0 0 1 3 0V11l.6-.1a1.5 1.5 0 0 1 1.9 1l.1.1a1.5 1.5 0 0 1 2.4.6 1.5 1.5 0 0 1 2.5 1.1V17a5 5 0 0 1-5 5h-1.6a5 5 0 0 1-3.9-1.9l-3.3-4.2a1.6 1.6 0 0 1 2.3-2.2L9 15.3z"/></svg><svg class="ar r" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></div><span></span></div><button class="v360" type="button" hidden>Xem ảnh 360</button><button class="x" type="button" aria-label="Đóng"></button></div></div>
+<div id="room" role="dialog" aria-modal="true" aria-label="Ảnh 360"><div id="rpano"></div><div class="rld">Đang tải ảnh 360…</div><button class="rback" type="button">Quay lại</button></div>
 <script type="module">
 import { initMenu } from '/menu.js';
-const N = 50, FPS = 25, IMG_AR = 3540 / 1536; // video tách tầng PhanTangTI_1st_V1, lặp PhanTangTI_2nd_V1
+const N = 50, FPS = 25, IMG_AR = 3540 / 1536; // video tách tầng PhanTangTI_1st_V2, khung cuối PhanTangTI_Anh_V2
 const preview = new URLSearchParams(location.search).has('preview');
 const $ = (id) => document.getElementById(id);
 const stage = $('stage'), cv = $('cv'), bg = $('bg'), hs = $('hs'), spg = $('spg'), lb = $('lb');
@@ -215,7 +235,7 @@ initMenu($('ui'), 'fly', { tab: 'matbang', noToggle: true });
 const touch = matchMedia('(hover: none)').matches;
 if (touch) hint.querySelector('.tx').textContent = 'Chạm để xem chi tiết';
 
-const tour = await fetch('/api/tour').then((r) => r.json()).catch(() => ({}));
+const tour = await (window.__tour || fetch('/api/tour').then((r) => r.json())).catch(() => ({}));
 let views = (tour.split && tour.split.view) || {};
 let spots = (tour.split && tour.split.hotspots) || [];
 // thiết bị theo cỡ màn hình (khớp với khung xem trước trong admin)
@@ -229,7 +249,10 @@ const view = () => ({ ...DEF, ...views[deviceKey()] });
 
 // ---------- tải khung (lazy): khung đầu ưu tiên; phần còn lại chỉ tải khi trình duyệt rảnh & mạng tốt,
 // hoặc ngay khi người xem rê chuột / chạm (sắp bấm); tải theo thứ tự, 6 song song (điện thoại 3) ----------
-const W = window.SPLIT_W || 1280, url = (i) => `/split/${W}/f_${String(i).padStart(2, '0')}.webp?v=6`;
+// khung đứng yên (f_00 lúc chờ, f_49 khung cuối) lấy đúng cỡ màn hình cho nét; khung đang chạy (mỗi khung chỉ hiện 40ms)
+// lấy thấp hơn 1 bậc → tải nhanh hơn ~35–40%, mắt không kịp thấy khác biệt
+const W = window.SPLIT_W || 1280, FW = { 960: 960, 1280: 960, 1920: 1280, 2560: 1920 }[W] || W;
+const url = (i) => `/split/${i === 0 || i === N - 1 ? W : FW}/f_${String(i).padStart(2, '0')}.webp?v=9`;
 const frames = new Array(N).fill(null), waiters = [], pending = new Array(N);
 let next = 1, active = 0, loaded = 0;
 const PAR = Math.min(innerWidth, innerHeight) < 600 ? 4 : 6;
@@ -317,7 +340,7 @@ function paint(img, x, y, w, h, ar) {
 }
 function draw(i) {
   if (tIdx >= 0) return drawTrans(tIdx);
-  const img = (lIdx >= 0 && i === N - 1 && lframes[lIdx]) || frames[i]; if (!img) return;
+  const img = frames[i]; if (!img) return;
   const g = geom();
   paint(img, g.dx, g.dy, g.dw, g.dh, IMG_AR);
 }
@@ -471,7 +494,7 @@ function loadEndHQ() {
   if (endHQ || preview) return; endHQ = true;
   // mạng chậm / tiết kiệm dữ liệu: vẫn tải, cỡ khung đã hạ 1 bậc nên end.webp (cao hơn 1 bậc) vừa đúng độ nét màn hình; đợi lúc rảnh mới tải
   const go = () => { const img = new Image(); img.decoding = 'async'; img.fetchPriority = 'low';
-  img.src = `/split/${W}/end.webp?v=7`;
+  img.src = `/split/${W}/end.webp?v=11`;
   img.decode().then(() => { warmImg(img); const prev = frames[N - 1]; frames[N - 1] = img;
     if (cur !== N - 1 || tIdx >= 0 || !prev) return draw(cur);
     // mờ dần từ khung video sang ảnh nét trong 0,5 s → không bị "giật" khi đổi chất lượng
@@ -481,43 +504,8 @@ function loadEndHQ() {
     requestAnimationFrame(step); }, () => {}); };
   window.SPLIT_SLOW ? (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(go, { timeout: 4000 }) : go();
 }
-// ---------- vòng lặp sau khi tách tầng xong (video PhanTangTI_2nd): l_00 trùng khung cuối f_49, l_49 ≈ l_00 →
-// lặp l_01..l_48 rồi quay về l_00 liền mạch. Chỉ tải SAU khi hotspot đã hiện, lúc trình duyệt rảnh, tuần tự 2–3 khung một lúc;
-// tải đủ cả vòng mới bắt đầu lặp (không giật). Mạng chậm / tiết kiệm dữ liệu vẫn lặp, dùng cỡ nhỏ nhất (960, ~1,9 MB cả vòng); chỉ bỏ qua trong admin xem trước:
-// khi đó đứng yên ở khung cuối như cũ. Tối đa 1920px để 50 khung giải mã không chiếm quá nhiều RAM/GPU. ----------
-const LN = 50, LFPS = 25, LW = window.SPLIT_SLOW ? 960 : Math.min(W, 1920);
-const lurl = (i) => `/split/loop/${LW}/l_${String(i).padStart(2, '0')}.webp?v=1`;
-const lframes = new Array(LN).fill(null);
-let lIdx = -1, lStarted = false, lRaf = 0, lHold = false;
-const LOOP_OK = false; // không lặp: chạy hết rồi giữ khung cuối end.webp (chất lượng cao)
-function loadLoop() {
-  if (lStarted || !LOOP_OK) return; lStarted = true;
-  let nx = 0, act = 0, got = 0; const par = Math.min(innerWidth, innerHeight) < 600 ? 2 : 3;
-  const step = () => {
-    while (act < par && nx < LN) {
-      const i = nx++; act++;
-      const img = new Image(); img.decoding = 'async'; img.fetchPriority = 'low'; img.src = lurl(i);
-      img.decode().then(() => { warmImg(img); lframes[i] = img; got++; }, () => {}).finally(() => { act--; if (got === LN) startLoop(); else step(); });
-    }
-  };
-  (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(step, { timeout: 1500 });
-}
-function startLoop() {
-  if (lRaf || lframes.some((f) => !f)) return;
-  // nhả các khung chạy giữa (giữ khung đầu + cuối) để bớt RAM; chạy lại thì tải lại như bình thường
-  for (let i = 1; i < N - 1; i++) { frames[i] = null; pending[i] = undefined; } next = 1; pumping = false;
-  let t0 = performance.now(), base = 0;
-  const tick = (t) => {
-    lRaf = requestAnimationFrame(tick);
-    if (lHold || lb.classList.contains("on") || cur !== N - 1 || playing || tIdx >= 0 || document.hidden) { t0 = t; base = Math.max(lIdx, 0); return; }
-    const k = (base + Math.floor((t - t0) * LFPS / 1000)) % (LN - 1); // l_49 ≈ l_00: bỏ khung trùng cho vòng liền
-    if (k !== lIdx) { lIdx = k; draw(cur); }
-  };
-  lRaf = requestAnimationFrame(tick);
-}
-function stopLoop() { lIdx = -1; }
 function reveal(instant) {
-  loadCardImgs(); setTimeout(loadEndHQ, instant ? 0 : 600); setTimeout(loadLoop, instant ? 400 : 1200);
+  loadCardImgs(); setTimeout(loadEndHQ, instant ? 0 : 600);
   hs.classList.toggle('instant', !!instant);
   hs.classList.remove('on'); void hs.offsetWidth; hs.classList.add('on');
   if (!instant) { const s = $('scan'); s.classList.remove('go'); void s.offsetWidth; s.classList.add('go'); }
@@ -527,10 +515,47 @@ const hideSpots = () => hs.classList.remove('on');
 // ---------- bảng xem ảnh ----------
 const lbImg = lb.querySelector('img');
 function lbFit() {
-  const mob = innerWidth < 700 && innerHeight > innerWidth;
+  // màn dọc (điện thoại, tablet dọc) hoặc rất hẹp: bảng đầy màn, chữ và nút theo cỡ thật
+  const mob = (innerHeight > innerWidth && innerWidth < 1000) || innerWidth < 560;
   lb.classList.toggle('mob', mob);
   lb.style.setProperty('--k', Math.min(1, (innerWidth - 24) / 1600, (innerHeight - 24) / 956));
 }
+// ---------- ảnh 360 trong bảng xem ảnh (hiện nút khi tab có ảnh 360). Thư viện 360 + ảnh chỉ tải khi rê / bấm nút →
+// không làm chậm trang. Mở bằng 4K (mạng chậm 2K), máy tính đủ mạnh nâng lên 8K ở nền lúc rảnh. ----------
+const PANO360 = { 'Sảnh chính': '/split/amenity/lobby/sanh360' };
+const v360 = lb.querySelector('.v360'), room = $('room'), rld = room.querySelector('.rld');
+const rSlow = (() => { const c = navigator.connection || {}; return !!c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ''); })();
+const rTex = (() => { try { const g = document.createElement('canvas').getContext('webgl'); return g ? g.getParameter(g.MAX_TEXTURE_SIZE) : 0; } catch (e) { return 0; } })();
+const rBig = rTex >= 8192 && !matchMedia('(max-width:1024px), (pointer:coarse)').matches;
+const rUrl = (b, r) => `${b}-${r}.webp?v=1`;
+let rLib = null, rViewer = null, rBase = null, pv = null; // pv: bộ chỉnh góc nhìn 360, chỉ tải khi mở ảnh 360
+const loadLib = () => rLib || (rLib = new Promise((res, rej) => {
+  const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/vendor/pannellum.css'; document.head.appendChild(l);
+  const sc = document.createElement('script'); sc.src = '/vendor/pannellum.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc);
+}));
+const rWarm = () => { const b = gal && PANO360[gal[gT].title]; if (!b) return; loadLib(); import('/panorama-view.js').then((m) => { pv = pv || m; }, () => {}); const im = new Image(); im.fetchPriority = 'low'; im.src = rUrl(b, rSlow ? '2k' : '4k'); };
+v360.addEventListener('pointerenter', rWarm); v360.addEventListener('touchstart', rWarm, { passive: true });
+async function openRoom() {
+  const b = gal && PANO360[gal[gT].title]; if (!b) return;
+  room.classList.add('on'); rld.style.display = 'flex';
+  try { [, pv] = await Promise.all([loadLib(), pv || import('/panorama-view.js')]); } catch (e) { rld.textContent = 'Không tải được ảnh 360.'; return; }
+  if (rViewer && rBase === b) { rld.style.display = 'none'; return; }
+  if (rViewer) { try { rViewer.destroy(); } catch (e) {} }
+  rBase = b;
+  rViewer = pannellum.viewer('rpano', { type: 'equirectangular', panorama: rUrl(b, rSlow ? '2k' : '4k'), autoLoad: true, showControls: false, ...pv.panoramaView({ hfov: 100 }, innerWidth, innerHeight) });
+  pv.bindPanoramaView(rViewer, $('rpano'), {}); // một cảnh: góc nhìn mặc định 100°, tự chỉnh theo tỉ lệ màn hình
+  rViewer.on('load', () => { rld.style.display = 'none';
+    if (!rBig || rViewer._up) return; rViewer._up = true; // nâng lên 8K ở nền, giữ nguyên hướng nhìn
+    (window.requestIdleCallback || ((f) => setTimeout(f, 800)))(() => { const im = new Image(); im.fetchPriority = 'low'; im.src = rUrl(b, '8k');
+      im.decode().then(() => { if (!room.classList.contains('on') || rBase !== b) return; const p = rViewer.getPitch(), y = rViewer.getYaw(), h = rViewer.getHfov();
+        rViewer.destroy(); rViewer = pannellum.viewer('rpano', { type: 'equirectangular', panorama: im.src, autoLoad: true, showControls: false, ...pv.panoramaView({ hfov: 100 }, innerWidth, innerHeight), pitch: p, yaw: y, hfov: h });
+        rViewer._up = true; pv.bindPanoramaView(rViewer, $('rpano'), {}); }, () => {}); }, { timeout: 2500 }); });
+  rViewer.on('error', () => { rld.style.display = 'flex'; rld.textContent = 'Không tải được ảnh 360.'; });
+}
+const closeRoom = () => room.classList.remove('on');
+v360.addEventListener('click', (e) => { e.stopPropagation(); openRoom(); });
+room.querySelector('.rback').addEventListener('click', closeRoom);
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && room.classList.contains('on')) { e.stopImmediatePropagation(); closeRoom(); } }, true);
 // ---------- bộ ảnh nhiều tab: chỉ tải ảnh đang xem (srcset theo bề rộng khung thật × DPR) + tải sẵn ảnh kề ----------
 const gTabs = lb.querySelector('.tb'), gPh = lb.querySelector('.ph'), gPrev = lb.querySelector('.nv.p'), gNext = lb.querySelector('.nv.n'), gSw = lb.querySelector('.sw');
 gSw.querySelector('span').textContent = touch ? 'Vuốt trái / phải để xem ảnh' : 'Kéo trái / phải để xem ảnh';
@@ -549,6 +574,7 @@ function gShow() {
   const ph = gal[gT].photos, u = ph[gI];
   gTabs.querySelectorAll('button').forEach((b, k) => { b.classList.toggle('on', k === gT); b.setAttribute('aria-selected', k === gT); });
   gPrev.disabled = gI === 0; gNext.disabled = gI === ph.length - 1;
+  v360.hidden = !PANO360[gal[gT].title]; lb.classList.toggle('has360', !v360.hidden);
   lbImg.classList.remove('ok'); lbImg.alt = `${gal[gT].title} ${gI + 1}/${ph.length}`;
   lbImg.fetchPriority = 'high'; lbImg.sizes = gSizes(); lbImg.srcset = gSet(u); lbImg.src = u;
   const me = u, done = () => { if (gal && gal[gT].photos[gI] === me) { lbImg.classList.add('ok'); gPrefetch(gI + 1); if (!gSlow) gPrefetch(gI - 1); } };
@@ -574,7 +600,7 @@ function openGallery(h) {
 function openPhoto(h) {
   if (h.gallery && h.gallery.length) return openGallery(h);
   if (!h.photo) return;
-  gal = null; lb.classList.remove('gal'); lbImg.removeAttribute('srcset'); lbImg.removeAttribute('sizes');
+  gal = null; v360.hidden = true; lb.classList.remove('gal', 'has360'); lbImg.removeAttribute('srcset'); lbImg.removeAttribute('sizes');
   lbFit(); lb.querySelector('h2').textContent = h.title;
   const pw = Math.min(innerWidth, 1357) * Math.min(devicePixelRatio || 1, 2);
   lbImg.classList.remove('ok'); lbImg.alt = h.title;
@@ -621,7 +647,7 @@ function play() {
   const off = TRANS_ON ? TN : 0;
   whenReady(off + cur, FPS, () => { t0 = performance.now(); base = cur; requestAnimationFrame(tick); });
 }
-function reset() { stopLoop(); playing = false; cur = 0; draw(0); hideSpots(); hint.classList.remove('off'); stage.classList.remove('done'); }
+function reset() { playing = false; cur = 0; draw(0); hideSpots(); hint.classList.remove('off'); stage.classList.remove('done'); }
 function jumpEnd(instant) {
   const go = () => { if (!frames[N - 1]) { loadOne(N - 1).then(go); return; } playing = false; cur = N - 1; draw(cur); hint.classList.add('off'); stage.classList.add('done'); reveal(instant); };
   go();

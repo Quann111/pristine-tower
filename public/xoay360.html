@@ -18,7 +18,7 @@
   var w = need <= 1000 ? 960 : need <= 1400 || phone ? 1280 : 1920;
   if (c.saveData || /(^|-)2g|3g/.test(c.effectiveType || '')) w = w > 960 ? (w === 1920 ? 1280 : 960) : 960;
   window.__FRAME_W = w;
-  var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.href = '/frames/' + w + '/f_000.webp?v=4'; l.setAttribute('fetchpriority', 'high'); document.head.appendChild(l);
+  var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.href = '/frames/' + w + '/f_000.webp?v=5'; l.setAttribute('fetchpriority', 'high'); document.head.appendChild(l);
 })();
 </script>
 <style>
@@ -52,7 +52,7 @@ html,body{margin:0;height:100%;background:#e9eef2;overflow:hidden;user-select:no
 import { initMenu } from '/menu.js';
 initMenu(document.getElementById('ui'), 'xoay', { tab: 'tongthe' });
 
-const N = 120, W = window.__FRAME_W || 1920, VER = 4;
+const N = 120, W = window.__FRAME_W || 1920, VER = 5;
 const DIR = 1; // +1: kéo sang phải → khung giảm (cảnh quay theo tay). Đổi -1 nếu video quay ngược chiều.
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d', { alpha: false });
 const url = (i) => `/frames/${W}/f_${String(i).padStart(3, '0')}.webp?v=${VER}`;

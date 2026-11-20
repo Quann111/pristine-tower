@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Tầng tiện ích - Pristine Tower</title>
-<link rel="preload" href="/api/tour" as="fetch" crossorigin="anonymous">
+<script>/* tải dữ liệu ngay từ đầu, trang dùng lại đúng kết quả này (API no-store: preload sẽ bị tải 2 lần) */(window.__tour = fetch('/api/tour').then((r) => r.json())).catch(() => {});</script>
 <link rel="preload" href="/fonts/DFVN-Gatsby-Gilmour.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/SVN-Spyrel-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,6 +13,7 @@
 <link rel="modulepreload" href="/menu.js">
 <style>
 *{box-sizing:border-box}
+html{--sw:clamp(196px,15vw,236px)}
 html,body{margin:0;height:100%;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
   background:radial-gradient(ellipse 85% 75% at 50% 0%,#5e4b3a 0%,#3d2c20 50%,#22170f 100%);background-color:#2b1f17}
 body{opacity:0;transition:opacity .4s}body.ready{opacity:1}body.leave{opacity:0}
@@ -20,26 +21,30 @@ body{opacity:0;transition:opacity .4s}body.ready{opacity:1}body.leave{opacity:0}
 #back{position:fixed;right:max(16px,2.2vw);top:max(16px,4.1vh);z-index:13;height:40px;padding:0 34px;border:0;border-radius:15px;background:#EFEEEA;color:#4A382A;font:500 17px/40px "SVN-Spyre",Georgia,serif;text-transform:uppercase;cursor:pointer;box-shadow:0 0 10px rgba(0,0,0,.25);text-decoration:none;transition:transform .2s,background .2s}
 #back:hover{background:#fff;transform:translateY(-1px)}
 /* sơ đồ: kéo để di chuyển, cuộn / chụm để phóng */
-#plan{position:fixed;left:clamp(260px,24vw,460px);right:6.2vw;top:11vh;bottom:15vh;overflow:hidden;cursor:grab;z-index:3;touch-action:none}
+#plan{position:fixed;left:calc(max(16px,2.5vw) + var(--sw) + clamp(16px,2vw,40px));right:6.2vw;top:11vh;bottom:15vh;overflow:hidden;cursor:grab;z-index:3;touch-action:none}
 #pbox{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
 #pbox.anim{transition:transform .6s cubic-bezier(.3,.8,.3,1)}
 #pbox img{display:block;max-width:none;pointer-events:none;opacity:0;transition:opacity .5s}
 #pbox img.ok{opacity:1}
 #zones{position:absolute;inset:0;pointer-events:none}
+/* ảnh bóc mái hiện trong khung: khung cao hơn sơ đồ một chút để ảnh to hơn (màn ngang) */
 /* vùng tiện ích (cùng kiểu overlay View 2D); viền/quầng nhân --k = 1 / mức phóng */
 .un{position:absolute;box-sizing:border-box;border:calc(2px * var(--k)) solid rgba(255,248,236,.95);border-radius:calc(4px * var(--k));pointer-events:auto;cursor:pointer;
   box-shadow:0 0 calc(12px * var(--k)) calc(2px * var(--k)) rgba(255,236,205,.6),inset 0 0 calc(10px * var(--k)) rgba(255,236,205,.35);animation:unin .45s cubic-bezier(.3,1.3,.5,1) both,unglow 1.6s ease-in-out .45s infinite}
 .un::before{content:'';position:absolute;inset:0;border-radius:inherit;background:#E4C49C;opacity:.28}
 .un b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(var(--k));padding:4px 12px;border-radius:99px;background:rgba(43,31,23,.85);color:#EFEEEA;font:500 13px/1.2 Inter,system-ui,sans-serif;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 @keyframes unglow{0%,100%{box-shadow:0 0 calc(12px * var(--k)) calc(3px * var(--k)) rgba(255,240,215,.6),inset 0 0 calc(10px * var(--k)) rgba(255,240,215,.3)}50%{box-shadow:0 0 calc(30px * var(--k)) calc(9px * var(--k)) rgba(255,240,215,.95),inset 0 0 calc(20px * var(--k)) rgba(255,240,215,.6)}}
+/* vùng chưa chọn: ẩn, rê chuột vào thì hiện (không nhấp nháy) */
+.un.ghost{opacity:0;animation:none;transition:opacity .2s}
+@media (hover:hover){.un.ghost:hover{opacity:1}}
 @keyframes unin{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
 /* khung "Ảnh tiện ích" bên trái */
-#side{position:fixed;left:max(16px,2.5vw);top:50%;transform:translateY(-50%);z-index:5;width:264px;padding:22px 26px 26px;border-radius:20px;
+#side{position:fixed;left:max(16px,2.5vw);top:50%;transform:translateY(-50%);z-index:5;width:var(--sw);padding:clamp(14px,1.4vw,22px) clamp(12px,1.2vw,20px) clamp(16px,1.6vw,24px);border-radius:20px;
   background:linear-gradient(180deg,rgba(239,238,234,.22),rgba(239,238,234,.12));border:1px solid rgba(239,238,234,.35);box-shadow:0 0 20px rgba(0,0,0,.3);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#side h3{margin:0 0 20px;text-align:center;font:400 24px/1.2 "DFVN Gatsby Gilmour",Georgia,serif;text-transform:uppercase;color:#EFEEEA;text-shadow:2px 2px 4px rgba(0,0,0,.25)}
-#side .list{display:flex;flex-direction:column;gap:20px}
-#side button{height:37px;border:0;border-radius:10px;background:#E4D7C6;color:#3A2C21;font:400 13px/37px Inter,system-ui,sans-serif;text-transform:uppercase;cursor:pointer;
-  box-shadow:0 2px 6px rgba(0,0,0,.25);transition:background .2s,color .2s,transform .2s,box-shadow .2s;white-space:nowrap;padding:0 12px}
+#side h3{margin:0 0 clamp(12px,1.2vw,18px);text-align:center;font:400 clamp(18px,1.4vw,24px)/1.2 "DFVN Gatsby Gilmour",Georgia,serif;text-transform:uppercase;color:#EFEEEA;text-shadow:2px 2px 4px rgba(0,0,0,.25)}
+#side .list{display:flex;flex-direction:column;gap:clamp(8px,1vw,16px)}
+#side button{min-height:clamp(30px,2.2vw,37px);border:0;border-radius:10px;background:#E4D7C6;color:#3A2C21;font:400 clamp(11px,.8vw,13px)/1.2 Inter,system-ui,sans-serif;text-transform:uppercase;cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.25);transition:background .2s,color .2s,transform .2s,box-shadow .2s;white-space:normal;padding:4px 8px}
 #side button:hover{background:#efe4d6;transform:translateY(-1px)}
 #side button.on{background:linear-gradient(90deg,#8C6A3F,#C09A62);color:#fff;box-shadow:0 0 12px rgba(228,196,156,.55)}
 #tip{position:fixed;left:50%;bottom:calc(max(12px,2.96vh) + 58px * .78 + 10px);transform:translateX(-50%);z-index:11;pointer-events:none;
@@ -54,7 +59,7 @@ body{opacity:0;transition:opacity .4s}body.ready{opacity:1}body.leave{opacity:0}
   #side h3{display:none}
   #side .list{flex-direction:row;gap:8px;overflow-x:auto;scrollbar-width:none;padding:4px 2px 8px}
   #side .list::-webkit-scrollbar{display:none}
-  #side button{flex:none;height:32px;line-height:32px;font-size:12px}
+  #side button{flex:none;height:32px;min-height:0;line-height:32px;font-size:12px;white-space:nowrap;padding:0 12px}
   #plan{left:8px;right:8px;top:118px;bottom:132px}
   #tip{font-size:13px}
 }
@@ -76,9 +81,6 @@ body{opacity:0;transition:opacity .4s}body.ready{opacity:1}body.leave{opacity:0}
 #lb .ph img{transform-origin:0 0;will-change:transform;user-select:none;-webkit-user-drag:none}
 #lb .ph img.fit{object-fit:contain;filter:drop-shadow(0 10px 24px rgba(0,0,0,.5))}
 /* nút "Ảnh bóc mái": tách khỏi danh sách tiện ích, kiểu nút be bo tròn */
-#side button.bm{margin-bottom:6px;height:44px;line-height:44px;border-radius:14px;background:#E4D7C6;font-size:14px;letter-spacing:.02em;box-shadow:0 3px 10px rgba(0,0,0,.3)}
-#side button.bm.on{background:linear-gradient(90deg,#8C6A3F,#C09A62);color:#fff;box-shadow:0 0 12px rgba(228,196,156,.55)}
-@media(max-width:900px) and (orientation:portrait),(max-width:700px){#side button.bm{margin-bottom:0;height:32px;line-height:32px;font-size:12px;border-radius:10px}}
 #lb .x{position:absolute;right:20px;top:20px;width:52px;height:52px;border:0;border-radius:50px;background:rgba(203,199,190,.25);box-shadow:0 0 10px rgba(0,0,0,.25);cursor:pointer;padding:0}
 #lb .x::before,#lb .x::after{content:"";position:absolute;left:50%;top:50%;width:27px;height:4px;margin:-2px 0 0 -13.5px;background:#EFEEEA;border-radius:2px;transform:rotate(45deg)}
 #lb .x::after{transform:rotate(135deg)}
@@ -106,7 +108,7 @@ initMenu($('ui'), 'fly', { tab: 'matbang', noToggle: true });
 if (matchMedia('(hover: none)').matches) $('tip').textContent = 'Chụm hai ngón để phóng to / thu nhỏ';
 $('back').onclick = (e) => { e.preventDefault(); document.body.classList.add('leave'); setTimeout(() => (location.href = '/matbang?end=1'), 350); };
 
-const tour = await fetch('/api/tour').then((r) => r.json()).catch(() => ({}));
+const tour = await (window.__tour || fetch('/api/tour').then((r) => r.json())).catch(() => ({}));
 const ap = (tour.split && tour.split.amenityPlan) || { items: [] };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -141,7 +143,8 @@ const up = (e) => {
   // chạm (không kéo) lên vùng đang tô → mở ảnh
   if (e.type === 'pointerup' && tapStart && Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y) < 6) {
     const z = document.elementsFromPoint(e.clientX, e.clientY).find((el) => el.classList.contains('un'));
-    if (z) openPhoto(ap.items.find((x) => x.id === z.dataset.id));
+    // vùng khác vùng đang chọn → chọn tiện ích đó (như bấm nút bên trái); vùng đang chọn → mở ảnh ngay
+    if (z) { if (z.dataset.id !== cur) list.querySelector(`button[data-id="${z.dataset.id}"]`)?.click(); else openPhoto(ap.items.find((x) => x.id === z.dataset.id)); }
   }
 };
 planEl.addEventListener('pointerup', up); planEl.addEventListener('pointercancel', up);
@@ -155,31 +158,32 @@ img.src = planSrc(ap.plan);
 // ---------- danh sách tiện ích + vùng tô ----------
 let cur = null, photoT = 0;
 const list = document.querySelector('#side .list');
-list.innerHTML = '<button type="button" class="bm">Ảnh bóc mái</button>'
+list.innerHTML = ''
   + ap.items.map((it) => `<button type="button" data-id="${esc(it.id)}">${esc(it.title)}</button>`).join('');
-// ảnh bóc mái: ảnh nền trong suốt, hiện nguyên ảnh (không cắt) trong bảng xem ảnh
-const ROOF = { title: 'Ảnh bóc mái', photo: '/split/amenity/bocmai-2048.webp', fit: true, anim: true };
+
+// vẽ mọi vùng tiện ích: vùng đang chọn sáng sẵn; các vùng khác ẩn, rê chuột vào thì hiện, bấm vào thì chọn tiện ích đó
 function renderZone() {
   zones.innerHTML = '';
-  const z = ap.items.find((x) => x.id === cur); if (!z || !img.naturalWidth) return;
-  const W = img.naturalWidth, H = img.naturalHeight, d = document.createElement('div');
-  d.className = 'un'; d.dataset.id = z.id;
-  d.style.cssText = `left:${z.x * W}px;top:${z.y * H}px;width:${z.w * W}px;height:${z.h * H}px`;
-  d.innerHTML = `<b>${esc(z.title)}</b>`;
-  zones.append(d);
+  if (!img.naturalWidth) return;
+  const W = img.naturalWidth, H = img.naturalHeight;
+  for (const z of ap.items) {
+    const d = document.createElement('div');
+    d.className = z.id === cur ? 'un' : 'un ghost'; d.dataset.id = z.id;
+    d.style.cssText = `left:${z.x * W}px;top:${z.y * H}px;width:${z.w * W}px;height:${z.h * H}px`;
+    d.innerHTML = `<b>${esc(z.title)}</b>`;
+    zones.append(d);
+  }
 }
 list.addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.classList.contains('bm')) { // bỏ vùng tô đang chọn, nút bóc mái sáng lên
-    clearTimeout(photoT); cur = 'roof'; renderZone();
-    list.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
-    openPhoto(ROOF); return;
-  }
   const z = ap.items.find((x) => x.id === b.dataset.id); if (!z) return;
   cur = z.id; list.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
   b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
-  renderZone(); focusZone(z);
-  clearTimeout(photoT); photoT = setTimeout(() => openPhoto(z), 2000); // xem vùng trên sơ đồ 2 giây rồi mới mở ảnh
+  // đang mở popup tiện ích khác: đóng popup, đợi sơ đồ hiện lại, trượt tới vùng mới rồi mới mở popup tiếp
+  const wait = lb.classList.contains('on') ? 650 : 0; if (wait) closePhoto();
+  clearTimeout(photoT);
+  renderZone(); setTimeout(() => { if (cur === z.id) focusZone(z); }, wait);
+  photoT = setTimeout(() => { if (cur === z.id) openPhoto(z); }, 2000 + wait); // xem vùng trên sơ đồ 2 giây rồi mới mở ảnh
 });
 
 // ---------- bảng xem ảnh (cùng spec với trang Mặt bằng) ----------
@@ -204,40 +208,13 @@ function openPhoto(h) {
   zReset();
   lbImg.src = !h.fit && pw <= 1400 ? h.photo.replace(/-2048\.webp$/, '-1280.webp') : h.photo;
   lbImg.decode().then(() => lbImg.classList.add('ok'), () => lbImg.classList.add('ok'));
-  if (h.anim) roofAnim(h);
   lb.classList.add('on'); requestAnimationFrame(() => lb.classList.add('show'));
   document.body.classList.add('pop'); // popup hiện xong thì mờ dần sơ đồ 2D phía sau
-}
-// ảnh bóc mái động (WebP động lặp vô hạn, nền trong suốt): ảnh tĩnh hiện ngay, bản động tải song song rồi thay vào khi đã
-// giải mã xong → không nháy trống. Cỡ theo khung hiển thị × mật độ điểm ảnh; mạng chậm / tiết kiệm dữ liệu lấy cỡ nhỏ nhất
-// (720px, ~0,3 MB — còn nhẹ hơn ảnh tĩnh). Máy bật "giảm chuyển động" thì giữ ảnh tĩnh. Phóng to / kéo vẫn dùng chung transform.
-const RM = false; // không chặn theo "giảm chuyển động" (máy tiết kiệm pin / hiệu năng hay bật sẵn) — ảnh bóc mái luôn chạy
-function roofAnim(h) {
-  if (RM) return;
-  const c = navigator.connection || {}, slow = c.saveData || /(^|-)2g|3g/.test(c.effectiveType || '');
-  // cỡ thật lúc hiện xong (không đo lúc popup còn đang thu nhỏ để chạy hiệu ứng): khung layout × hệ số --k (máy tính) / 1 (điện thoại)
-  const k = lb.classList.contains("mob") ? 1 : +getComputedStyle(lb).getPropertyValue("--k") || 1;
-  const need = Math.min(ph.offsetWidth, ph.offsetHeight) * k * Math.min(devicePixelRatio || 1, 2);
-  const w = slow || need <= 720 ? 720 : need <= 1080 ? 1080 : 1600, src = `/split/amenity/bocmai-anim-${w}.webp?v=2`;
-  const a = new Image(); a.decoding = 'async'; a.src = src;
-  // chạy 1 lần (2,04 s) rồi thay bằng khung cuối chất lượng cao (tải sẵn trong lúc chạy)
-  const ew = slow ? 1600 : 2500, end = new Image(); end.decoding = 'async'; end.src = `/split/amenity/bocmai-end-${ew}.webp?v=1`;
-  const live = () => lb.classList.contains('on') && lbImg.alt === h.title;
-  a.decode().then(() => { if (!live()) return; lbImg.src = src; lbImg.classList.add('ok'); const t0 = performance.now();
-    end.decode().then(() => setTimeout(() => { if (live() && /bocmai-anim/.test(lbImg.src)) lbImg.src = end.src; }, Math.max(0, 2100 - (performance.now() - t0))), () => {});
-  }, () => {});
 }
 // phóng to ảnh trong popup: cuộn chuột / chụm 2 ngón / bấm đúp; kéo để di chuyển khi đã phóng
 const ph = lb.querySelector('.ph');
 let zs = 1, zx = 0, zy = 0;
-const zApply = () => { lbImg.style.transform = `translate(${zx}px,${zy}px) scale(${zs})`; ph.classList.toggle("zm", zs > 1.01); if (zs > 1.6) roofHi(); };
-// đang phóng to ảnh bóc mái động → nâng lên bản 1600px (nét hơn) ở nền, vẫn lặp liên tục, không đổi vị trí phóng
-let roofHiOn = false;
-function roofHi() { // đang phóng to khung cuối bản 1600 → nâng lên 2500
-  if (roofHiOn || !/bocmai-end-1600/.test(lbImg.src)) return; roofHiOn = true;
-  const src = "/split/amenity/bocmai-end-2500.webp?v=1", a = new Image(); a.decoding = "async"; a.src = src;
-  a.decode().then(() => { if (lb.classList.contains("on") && /bocmai-end/.test(lbImg.src)) lbImg.src = src; }, () => {});
-}
+const zApply = () => { lbImg.style.transform = `translate(${zx}px,${zy}px) scale(${zs})`; ph.classList.toggle("zm", zs > 1.01); };
 function zClamp() { const w = ph.clientWidth, h = ph.clientHeight; zx = Math.min(0, Math.max(w - w * zs, zx)); zy = Math.min(0, Math.max(h - h * zs, zy)); }
 function zReset() { zs = 1; zx = zy = 0; zApply(); }
 function zAt(f, cx, cy) { // cx, cy: toạ độ màn hình
@@ -263,8 +240,6 @@ lb.addEventListener('click', (e) => { if (e.target === lb || e.target.closest('.
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && lb.classList.contains('on')) closePhoto(); });
 
 requestAnimationFrame(() => document.body.classList.add('ready'));
-// mới vào trang 4 giây mà chưa chọn gì → tự chọn tiện ích đầu tiên (Golf)
-setTimeout(() => { if (!cur) list.querySelector('button')?.click(); }, 4000);
 </script>
 </body>
 </html>

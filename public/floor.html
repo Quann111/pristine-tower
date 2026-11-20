@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap"></noscript>
 <link rel="preload" href="/fonts/DFVN-Gatsby-Gilmour.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/SVN-Spyrel-Medium.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/api/tour" as="fetch" crossorigin="anonymous">
+<script>/* tải dữ liệu ngay từ đầu, trang dùng lại đúng kết quả này (API no-store: preload sẽ bị tải 2 lần) */(window.__tour = fetch('/api/tour').then((r) => r.json())).catch(() => {});</script>
 <link rel="modulepreload" href="/menu.js">
 <style>
 *{box-sizing:border-box}
@@ -38,6 +38,8 @@ body.m2d.sel #pzoom{display:flex;animation:fin .5s}
 @media(max-height:520px){#pzoom{bottom:calc(56px + 104px)}}
 #umodal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(20,14,10,.62);backdrop-filter:blur(4px);animation:fin .3s}
 #umodal[hidden]{display:none}
+/* popup căn đang mở: ẩn hẳn mọi thứ phía sau, chỉ còn popup; đóng thì hiện lại */
+body.uon>*:not(#umodal):not(script){opacity:0!important;pointer-events:none!important}
 #umodal .ubox{position:relative;max-width:min(92vw,1100px);max-height:88vh;padding:18px 18px 16px;border-radius:20px;background:rgba(203,199,190,.25);box-shadow:0 0 30px rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;animation:unin .35s cubic-bezier(.3,1.3,.5,1) both}
 #umodal h4{margin:4px 44px 12px;font:400 20px/24px "DFVN Gatsby Gilmour",Georgia,serif;text-transform:uppercase;color:#EFEEEA;text-align:center}
 #umodal img{display:block;max-width:100%;max-height:calc(88vh - 80px);object-fit:contain;border-radius:12px}
@@ -135,9 +137,10 @@ body.m2d:not(.sel) #phint{display:block}
 <script src="/vendor/pannellum.js" defer></script>
 <script type="module">
 import { initMenu } from '/menu.js';
+import { panoramaView, bindPanoramaView } from '/panorama-view.js';
 // vào từ trang Phân tầng → quay lại đó; vào từ video tách tầng → về khung cuối
 if (/\/phantang/.test(document.referrer) || new URLSearchParams(location.search).get('from') === 'pt') document.getElementById('back').href = '/phantang';
-const tour = await (await fetch('/api/tour')).json();
+const tour = await (window.__tour || fetch('/api/tour').then((r) => r.json()));
 // hotspot ở trang phân tầng còn dùng mã tầng cũ (f…) → đổi sang mã tầng có mặt bằng riêng (t…)
 const ALIAS = { f40: 't40', f36: 't3638', f35: 't35', f21: 't2134', f20: 't20', f4: 't3a', f13: 't3a' };
 const id0 = new URLSearchParams(location.search).get('id');
@@ -155,17 +158,13 @@ const isRoof = !item.pano && fl.defaultPano === '/home/rooftop.webp';
 const pano = item.pano || (isRoof ? '/home/rooftop.webp?v=2' : fl.defaultPano), plan = item.plan || fl.defaultPlan;
 const pano8k = isRoof && big ? '/home/rooftop-8k.webp?v=2' : null;
 
-const isMobile = matchMedia('(max-width:768px), (orientation:portrait)').matches;
-const start = { hfov: 100, ...((isMobile && item.viewMobile) || item.view || {}) };
-if (!isMobile) start.hfov = Math.max(start.hfov, 120);
-// hfov đã lưu ứng với màn 16:9; màn rộng hơn thì mở rộng hfov để giữ góc nhìn dọc, tránh bị zoom sát
-const fitHfov = (h) => { const a = innerWidth / innerHeight; if (a <= 16 / 9) return h; const r = Math.PI / 180; return Math.min(140, 2 * Math.atan(Math.tan(h * r / 2) / (16 / 9) * a) / r); };
-let viewer = null, lastFit = fitHfov(start.hfov);
+let viewer = null;
 // ảnh 360 chỉ tải khi thật sự xem chế độ 360 (mở thẳng 2D thì hoãn lại)
 const makeViewer = () => {
   loading.style.display = '';
-  const sc0 = { type: 'equirectangular', panorama: pano, autoLoad: true, ...start, hfov: fitHfov(start.hfov) };
-  viewer = window.viewer = pannellum.viewer('pano', { default: { firstScene: 'm', showControls: false, maxHfov: isMobile ? 120 : 140, sceneFadeDuration: 500 }, scenes: { m: sc0 } });
+  const sc0 = { type: 'equirectangular', panorama: pano, autoLoad: true, ...panoramaView(item, innerWidth, innerHeight) };
+  viewer = window.viewer = pannellum.viewer('pano', { default: { firstScene: 'm', showControls: false, sceneFadeDuration: 500 }, scenes: { m: sc0 } });
+  bindPanoramaView(viewer, document.getElementById('pano'), { m: item });
   let upped = false, drag = false;
   viewer.on('mousedown', () => { drag = true; }); viewer.on('mouseup', () => { drag = false; });
   viewer.on('touchstart', () => { drag = true; }); viewer.on('touchend', () => { drag = false; });
@@ -179,7 +178,6 @@ const makeViewer = () => {
   });
   viewer.on('error', () => { loading.textContent = 'Không tải được ảnh 360.'; });
 };
-addEventListener('resize', () => { const h = fitHfov(start.hfov); if (viewer && Math.abs(viewer.getHfov() - lastFit) < 0.5) viewer.setHfov(h, false); lastFit = h; });
 
 // VIEW 2D: ảnh mặt bằng, kéo để di chuyển, cuộn/chụm để phóng to
 const planEl = document.getElementById('plan'), img = document.getElementById('planimg');
@@ -270,10 +268,10 @@ const openUnit = (type, uid) => {
   uimg.srcset = `${ub}-1200.webp 1200w, ${ub}.webp ${vuon ? 2000 : 2400}w`; uimg.src = `${ub}-1200.webp`; uimg.alt = document.getElementById('utitle').textContent;
   // nút xem 360: căn 2BR / 3BR (trừ căn có vườn — bố cục khác)
   const r = ROOM360[type] && !vuon; u360.hidden = !r; u360.dataset.k = r ? type : ''; umodal.querySelector('.ubox').classList.toggle('has360', !!r);
-  umodal.hidden = false;
+  umodal.hidden = false; document.body.classList.add('uon');
   if (r) roomWarm(type);
 };
-const closeUnit = () => { umodal.hidden = true; unitsEl.querySelectorAll('.un.on').forEach((x) => x.classList.remove('on')); };
+const closeUnit = () => { umodal.hidden = true; document.body.classList.remove('uon'); unitsEl.querySelectorAll('.un.on').forEach((x) => x.classList.remove('on')); };
 const warmed = new Set();
 unitsEl.addEventListener('pointerover', (e) => {
   const k = CUTAWAY[e.target.dataset && e.target.dataset.type];
@@ -286,7 +284,7 @@ const room = document.getElementById('room'), u360 = umodal.querySelector('.u360
 const rConn = navigator.connection || {}, rSlow = !!rConn.saveData || /(^|-)2g|3g/.test(rConn.effectiveType || '');
 const rBig = maxTex >= 8192 && !matchMedia('(max-width:1024px), (pointer:coarse)').matches;
 const rIdle = (fn) => (window.requestIdleCallback || ((f) => setTimeout(f, 800)))(fn, { timeout: rSlow ? 6000 : 2000 });
-const rUrl = (k, r) => `/home/units/pano-${k}-${r}.webp?v=1`;
+const rUrl = (k, r) => `/home/units/pano-${k}-${r}.webp?v=2`;
 let rViewer = null, rUp = new Set(), rBusy = false, rDrag = false;
 // rê / chạm vào nút xem 360: nạp sẵn ảnh 4K của căn đó
 const rWarmed = new Set();
@@ -306,14 +304,15 @@ function rSwap(id) {
   rViewer.loadScene(id, rViewer.getPitch(), rViewer.getYaw(), rViewer.getHfov());
 }
 const rScenes = {
-  pn2: { type: 'equirectangular', panorama: rUrl('pn2', '4k'), hfov: 110, autoLoad: true },
-  pn3: { type: 'equirectangular', panorama: rUrl('pn3', '4k'), hfov: 110, autoLoad: true }
+  pn2: { type: 'equirectangular', panorama: rUrl('pn2', '4k'), ...panoramaView({ hfov: 100 }, innerWidth, innerHeight), autoLoad: true },
+  pn3: { type: 'equirectangular', panorama: rUrl('pn3', '4k'), ...panoramaView({ hfov: 100 }, innerWidth, innerHeight), autoLoad: true }
 };
 function openRoom(k) {
   closeUnit(); room.classList.add('on'); document.body.classList.add('rooming');
   if (!rViewer) {
     rld.style.display = 'flex';
-    rViewer = pannellum.viewer('rpano', { default: { firstScene: k, sceneFadeDuration: 600, showControls: false, autoLoad: true, maxHfov: 130 }, scenes: rScenes });
+    rViewer = pannellum.viewer('rpano', { default: { firstScene: k, sceneFadeDuration: 600, showControls: false, autoLoad: true }, scenes: rScenes });
+    bindPanoramaView(rViewer, document.getElementById('rpano'), { pn2: { hfov: 100 }, pn3: { hfov: 100 } });
     rViewer.on('load', () => { rld.style.display = 'none'; rSync(); rUpgrade(); const o = k === 'pn2' ? 'pn3' : 'pn2'; roomWarm(o); });
     rViewer.on('scenechange', rSync);
     rViewer.on('mousedown', () => { rDrag = true; }); rViewer.on('mouseup', () => { rDrag = false; });

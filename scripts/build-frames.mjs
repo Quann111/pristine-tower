@@ -9,7 +9,7 @@ import sharp from 'sharp';
 
 const src = process.argv[2];
 if (!src || !fs.existsSync(src)) { console.error('Thiếu hoặc sai đường dẫn video / thư mục ảnh'); process.exit(1); }
-const N = 120, SIZES = [960, 1280, 1920], QUALITY = { 960: 74, 1280: 76, 1920: 77 };
+const N = 120, SIZES = [960, 1280, 1920], QUALITY = { 960: 76, 1280: 78, 1920: 78 };
 const outDir = (w) => path.resolve('public', 'frames', String(w));
 const report = () => {
   for (const w of SIZES) {

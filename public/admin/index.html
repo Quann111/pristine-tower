@@ -184,7 +184,23 @@ input,select{background:#0f1115;border:1px solid #383d49;border-radius:6px;paddi
 <div id="up" class="modal hidden"><div><h2>Tải ảnh 360 mới</h2><label>Tên cảnh<input id="un" value="GÓC NHÌN MỚI"></label><label>Ảnh panorama (tỉ lệ 2:1)<input id="uf" type="file" accept="image/*"></label><p class="err" id="ue"></p>
 <div class="actions"><button class="btn" id="ucancel" type="button">Huỷ</button><button class="btn primary" id="uok" type="button">Tải lên</button></div></div></div>
 <script src="/vendor/pannellum.js"></script>
-<script>
+<script type="module">
+import { panoramaView, horizontalFov, verticalFov } from '/panorama-view.js';
+function previewView(source, element, mobile) {
+  const { width, height } = element.getBoundingClientRect();
+  const selected = mobile ? source : { view: source.view };
+  return panoramaView(selected, width || (mobile ? 9 : 16), height || (mobile ? 16 : 9));
+}
+function savedView(viewer, element, mobile) {
+  const aspect = element.clientWidth / element.clientHeight;
+  return { yaw: +viewer.getYaw().toFixed(2), pitch: +viewer.getPitch().toFixed(2),
+    hfov: +horizontalFov(verticalFov(viewer.getHfov(), aspect), mobile ? 9 / 16 : 16 / 9).toFixed(2) };
+}
+function restoreView(viewer, source, element, mobile) {
+  const v = previewView(source, element, mobile);
+  viewer.setHfovBounds([v.minHfov, v.maxHfov]);
+  viewer.lookAt(v.pitch || 0, v.yaw || 0, v.hfov, false);
+}
 const $ = (id) => document.getElementById(id);
 let uf = null, ul = [], usel = null, utype = null, udrag = null, udraw = null;
 const uTypes = () => tour.floors.unitTypes || [];
@@ -463,14 +479,14 @@ function refreshCam() {
   if (key === fcamKey) { fcamInfo(); return; }
   fcamKey = key; if (fpvInst) { try { fpvInst.destroy(); } catch (e) {} fpvInst = null; }
   $('fpv').classList.toggle('phone', fdev === 'mobile');
-  fpvInst = pannellum.viewer('fpv', Object.assign({ type: 'equirectangular', panorama: c.pano || tour.floors.defaultPano, autoLoad: true, hfov: 100 }, c[fvk()] || (fdev === 'mobile' ? c.view : null) || {}));
+  fpvInst = pannellum.viewer('fpv', Object.assign({ type: 'equirectangular', panorama: c.pano || tour.floors.defaultPano, autoLoad: true, hfov: 100 }, previewView(c, $('fpv'), fdev === 'mobile')));
   fcamInfo();
 }
 async function fSaveAll() { try { await api('/api/admin/floors', 'PUT', { items: fit }); } catch (er) { toast(er.message); } }
 $('fcd').onclick = () => { fdev = 'desktop'; $('fcd').classList.add('on'); $('fcm').classList.remove('on'); refreshCam(); };
 $('fcm').onclick = () => { fdev = 'mobile'; $('fcm').classList.add('on'); $('fcd').classList.remove('on'); refreshCam(); };
-$('fsetv').onclick = async () => { const c = fcur(); if (!c || !fpvInst) return; c[fvk()] = { yaw: +fpvInst.getYaw().toFixed(2), pitch: +fpvInst.getPitch().toFixed(2), hfov: Math.round(fpvInst.getHfov()) }; fcamInfo(); await fSaveAll(); toast('Đã đặt góc camera'); };
-$('fgov').onclick = () => { const c = fcur(), v = c && c[fvk()]; if (!v) return toast('Chưa đặt hướng'); fpvInst.setYaw(v.yaw, false); fpvInst.setPitch(v.pitch, false); fpvInst.setHfov(v.hfov, false); };
+$('fsetv').onclick = async () => { const c = fcur(); if (!c || !fpvInst) return; c[fvk()] = savedView(fpvInst, $('fpv'), fdev === 'mobile'); fcamInfo(); await fSaveAll(); toast('Đã đặt góc camera'); };
+$('fgov').onclick = () => { const c = fcur(), v = c && c[fvk()]; if (!v) return toast('Chưa đặt hướng'); restoreView(fpvInst, c, $('fpv'), fdev === 'mobile'); };
 $('fclrv').onclick = async () => { const c = fcur(); if (!c) return; delete c[fvk()]; fcamInfo(); await fSaveAll(); toast('Đã xoá góc camera'); };
 function drawFloors(skipList) {
   const c = fcur();
@@ -606,14 +622,14 @@ function showView(s) { const vw = s[vkey()]; $('viewinfo').textContent = vw ? (d
 async function saveView(view) {
   try { await api('/api/admin/scenes/' + curId, 'PATCH', { view, device: dev }); await reload(); showView(tour.scenes.find((x) => x.id === curId)); toast(view ? 'Đã đặt hướng camera' : 'Đã xoá hướng camera'); } catch (er) { toast(er.message); }
 }
-$('setview').onclick = () => saveView({ yaw: +pv.getYaw().toFixed(2), pitch: +pv.getPitch().toFixed(2), hfov: Math.round(pv.getHfov()) });
+$('setview').onclick = () => saveView(savedView(pv, $('pv'), dev === 'mobile'));
 $('clrview').onclick = () => saveView(null);
-$('gotoview').onclick = () => { const v = tour.scenes.find((x) => x.id === curId)[vkey()]; if (!v) return toast('Chưa đặt hướng'); pv.setYaw(v.yaw, false); pv.setPitch(v.pitch, false); pv.setHfov(v.hfov, false); };
+$('gotoview').onclick = () => { const v = tour.scenes.find((x) => x.id === curId)[vkey()]; if (!v) return toast('Chưa đặt hướng'); restoreView(pv, tour.scenes.find(x => x.id === curId), $('pv'), dev === 'mobile'); };
 function setDev(d) {
   dev = d; $('devd').classList.toggle('on', d === 'desktop'); $('devm').classList.toggle('on', d === 'mobile');
   $('pv').classList.toggle('phone', d === 'mobile');
   const s = tour.scenes.find((x) => x.id === curId); showView(s);
-  setTimeout(() => { pv.resize(); const v = s[vkey()] || (d === 'mobile' ? s.view : null); if (v) { pv.setYaw(v.yaw, false); pv.setPitch(v.pitch, false); pv.setHfov(v.hfov, false); } }, 50);
+  setTimeout(() => { pv.resize(); restoreView(pv, s, $('pv'), dev === 'mobile'); }, 50);
 }
 $('devd').onclick = () => setDev('desktop'); $('devm').onclick = () => setDev('mobile');
 function setAdd(on) {
@@ -627,7 +643,8 @@ function editScene(id) {
   curId = id; pending = null; $('newbox').classList.add('hidden'); $('et').textContent = 'Hotspot: ' + s.name;
   if (pv) { try { pv.destroy(); } catch (e) {} }
   const spots = s.hotspots.map((h) => ({ id: h.id, pitch: h.pitch, yaw: h.yaw, text: h.text, cssClass: 'ahs', type: 'info' }));
-  pv = pannellum.viewer('pv', Object.assign({ type: 'equirectangular', panorama: s.image, autoLoad: true, hfov: 100, hotSpots: spots }, s[vkey()] || (dev === 'mobile' ? s.view : null) || {}));
+  $('pv').classList.toggle('phone', dev === 'mobile');
+  pv = pannellum.viewer('pv', Object.assign({ type: 'equirectangular', panorama: s.image, autoLoad: true, hfov: 100, hotSpots: spots }, previewView(s, $('pv'), dev === 'mobile')));
   showView(s); $('pv').classList.toggle('phone', dev === 'mobile');
   sceneMoveId = null; setAdd(false);
   const pvEl = $('pv');

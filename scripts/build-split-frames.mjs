@@ -9,7 +9,7 @@ import path from 'node:path';
 
 const video = process.argv[2];
 if (!video || !fs.existsSync(video)) { console.error('Thiếu hoặc sai đường dẫn video'); process.exit(1); }
-const Q_MOVE = { 960: 72, 1280: 72, 1920: 72, 2560: 70 }, Q_STILL = { 960: 88, 1280: 90, 1920: 90, 2560: 88 };
+const Q_MOVE = { 960: 68, 1280: 68, 1920: 68, 2560: 66 }, Q_STILL = { 960: 88, 1280: 90, 1920: 90, 2560: 88 };
 const STILL = (i, n) => i === 0 || i >= n - 2;
 const ff = (args) => { const r = spawnSync('ffmpeg', ['-v', 'error', '-y', ...args], { stdio: 'inherit' }); if (r.status !== 0) process.exit(r.status || 1); };
 const webp = (q) => ['-c:v', 'libwebp', '-quality', String(q), '-compression_level', '6', '-preset', 'picture'];

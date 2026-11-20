@@ -6,7 +6,7 @@
 <title>Trang chủ - Pristine Tower</title>
 <link rel="preload" href="/fonts/DFVN-Gatsby-Gilmour.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/SVN-Spyrel-Medium.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/api/tour" as="fetch" crossorigin="anonymous">
+<script>/* tải dữ liệu ngay từ đầu, trang dùng lại đúng kết quả này (API no-store: preload sẽ bị tải 2 lần) */(window.__tour = fetch('/api/tour').then((r) => r.json())).catch(() => {});</script>
 <script>/* lần sau vào: tải trước ảnh nền đã biết, không chờ /api/tour */try{var hb=localStorage.getItem("homeBg");if(hb&&/^\/[\w\/.?=-]+$/.test(hb))document.write('<link rel="preload" as="image" fetchpriority="high" href="'+hb+'">')}catch(e){}</script>
 <link rel="modulepreload" href="/menu.js">
 <style>
@@ -55,7 +55,7 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;user-select:none}
 import { initMenu, applyHotspotSize } from '/menu.js';
 const stage = document.getElementById('stage');
 initMenu(document.getElementById('ui'), 'fly', { tab: 'tongthe' });
-const tour = await (await fetch('/api/tour')).json();
+const tour = await (window.__tour || fetch('/api/tour').then((r) => r.json()));
 applyHotspotSize(tour.hotspotSize);
 stage.style.setProperty('--bg', `url(${tour.home.bg})`);
 try { localStorage.setItem('homeBg', tour.home.bg); } catch (e) {}
@@ -72,8 +72,9 @@ const layout = () => {
   const f = (tour.home.focus || {})[innerWidth < 768 ? 'phone' : innerWidth < 1200 ? 'tablet' : ''];
   if (f) { // điện thoại / tablet: tâm ngang luôn là trục toà nhà (trung bình x các hotspot trên toà), tâm dọc theo admin chọn
     const hx = tour.home.hotspots.length ? tour.home.hotspots.reduce((n, h) => n + h.x, 0) / tour.home.hotspots.length : f.x;
-    ox = Math.min(0, Math.max(innerWidth - w, innerWidth / 2 - hx * s));
-    oy = Math.min(0, Math.max(innerHeight - hgt, innerHeight / 2 - f.y * s));
+    // chỉ dời tâm theo chiều ảnh rộng hơn màn; chiều ảnh nhỏ hơn màn (màn quá rộng, ảnh bị giới hạn phóng) thì giữ ở giữa
+    if (w > innerWidth) ox = Math.min(0, Math.max(innerWidth - w, innerWidth / 2 - hx * s));
+    if (hgt > innerHeight) oy = Math.min(0, Math.max(innerHeight - hgt, innerHeight / 2 - f.y * s));
   }
   Object.assign(bgimg.style, { left: ox + 'px', top: oy + 'px', width: w + 'px', height: hgt + 'px' });
   stage.querySelectorAll('.hs').forEach((a) => { a.style.left = ox + a.dataset.x * s + 'px'; a.style.top = oy + a.dataset.y * s + 'px'; });
